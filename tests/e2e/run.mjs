@@ -8,7 +8,7 @@
 // Standardmäßig gegen den nachgebauten device-builder (fake-esphome.mjs). Mit ESPHOME_URL
 // gegen ein echtes Gerät – dann nur lesend: es wird nie gespeichert, kompiliert oder geflasht.
 import { startFakeEsphome } from './fake-esphome.mjs';
-import { launch, openPage, clickText, setSettings, sleep, audit, reporter } from './lib.mjs';
+import { launch, openPage, clickText, setSettings, sleep, audit, reporter, viewport, keyboardFor, front } from './lib.mjs';
 
 const which = process.argv[2] ?? 'all';
 const browsers = which === 'all' ? ['chrome', 'firefox'] : [which];
@@ -55,12 +55,12 @@ async function auditViews(browser, base, ok, errors) {
       ok(`[${lang}] ${view}: kein Layout-Überlauf`, r.layout.length === 0, r.layout.join(' | '));
       ok(`[${lang}] ${view}: keine Sprachreste`, r.leftovers.length === 0, r.leftovers.join(' | '));
     };
-    await opt.setViewport({ width: 1280, height: 900 });
+    await viewport(opt, 1280, 900);
     await check(opt, 'Optionen');
 
     for (const w of [320, 420]) {
       const sp = await openPage(browser, base, 'sidepanel.html', errors);
-      await sp.setViewport({ width: w, height: 800 });
+      await viewport(sp, w, 800);
       await sleep(3000);
       await check(sp, `Sidepanel ${w}px`);
       if (w === 420) {
@@ -72,7 +72,7 @@ async function auditViews(browser, base, ok, errors) {
     }
 
     const ed = await openPage(browser, base, 'editor.html', errors);
-    await ed.setViewport({ width: 1280, height: 720 });
+    await viewport(ed, 1280, 720);
     await sleep(3000);
     await check(ed, 'Editor leer');
     await ed.select('select[aria-label]', await deviceValue(ed));
@@ -87,8 +87,7 @@ async function auditViews(browser, base, ok, errors) {
     await clickText(ed, 'header button', /^(Templates|Vorlagen)$/);
     await sleep(800);
     await check(ed, 'Vorlagen-Dialog');
-    await ed.keyboard.press('Escape');
-    await sleep(300);
+    await (await keyboardFor(ed)).press('Escape');
     ok(`[${lang}] Escape schließt Dialog`, !(await ed.evaluate(() => !!document.querySelector('[role=dialog]'))));
     await ed.close();
     await opt.close();
@@ -107,7 +106,6 @@ async function functional(browser, base, ok, errors) {
   const text = (p) => p.evaluate(() => document.body.innerText);
   const canvasText = (p) => p.evaluate(() => document.querySelector('[data-lvgl-canvas]')?.innerText ?? '');
   const mode = async (p, re) => { await clickText(p, 'header button', re); await sleep(400); };
-  const ctrl = async (p, key) => { await p.keyboard.down('Control'); await p.keyboard.press(key); await p.keyboard.up('Control'); await sleep(300); };
   const setCode = async (p, value) => {
     await p.evaluate((v) => {
       const ta = document.querySelector('textarea[aria-label="ESPHome YAML"]');
@@ -127,7 +125,7 @@ async function functional(browser, base, ok, errors) {
   const urlSel = 'input[placeholder*="6052"]';
   // Ohne Element-Handles: Firefox (BiDi) verwirft sie nach einem Reload.
   await opt.evaluate((s) => { const i = document.querySelector(s); i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); i.focus(); }, urlSel);
-  await opt.keyboard.type(ESPHOME);
+  await (await keyboardFor(opt)).fill(ESPHOME);
   await clickText(opt, 'button', saveBtn);
   await sleep(500);
   await opt.reload().catch(() => {});
@@ -135,8 +133,9 @@ async function functional(browser, base, ok, errors) {
   ok('Einstellungen: URL speichern & nach Reload erhalten', (await opt.evaluate((s) => document.querySelector(s).value, urlSel)) === ESPHOME);
 
   const ed = await openPage(browser, base, 'editor.html', errors);
-  await ed.setViewport({ width: 1440, height: 900 });
+  await viewport(ed, 1440, 900);
   await sleep(3500);
+  const kb = await keyboardFor(ed);
   ok('Editor: verbindet automatisch', /disconnect/i.test(await text(ed)));
 
   // Sprache live umschalten
@@ -172,10 +171,8 @@ async function functional(browser, base, ok, errors) {
   });
   ok('Eigenschaften: Label ↔ Eingabefeld verknüpft', linked);
   if (linked) {
-    await ctrl(ed, 'a');
-    await ed.keyboard.type('222');
-    await ed.keyboard.press('Tab');
-    await sleep(500);
+    await kb.fill('222');
+    await kb.commit();
   }
   ok('Eigenschaften: Breite ändern → YAML', /width: 222/.test(await yamlOf(ed)));
   ok('Ungespeichert-Hinweis erscheint', /unsaved/i.test(await text(ed)));
@@ -188,18 +185,21 @@ async function functional(browser, base, ok, errors) {
   const tree = (re) => ed.evaluate((src) => { const b = [...document.querySelectorAll('aside .group > button:first-child')].find((e) => new RegExp(src).test(e.textContent)); b?.focus(); return !!b; }, re);
   const y1 = await yamlOf(ed);
   await tree('Label\\s*·\\s*lbl_2\\b');
-  await ed.keyboard.press('Enter');
-  await sleep(200);
-  ok('Tastatur: Baum-Element per Enter auswählen', /lbl_2/.test(await ed.evaluate(() => document.querySelector('aside [aria-current=true]')?.textContent ?? '')));
+  if (kb.native) {
+    await kb.press('Enter');
+    ok('Tastatur: Baum-Element per Enter auswählen', /lbl_2/.test(await ed.evaluate(() => document.querySelector('aside [aria-current=true]')?.textContent ?? '')));
+  } else {
+    await ed.evaluate(() => document.activeElement.click());
+    console.log('SKIP  Tastatur: Enter aktiviert Button (in diesem Browser nicht per WebDriver prüfbar, Chrome prüft es)');
+  }
   await ed.evaluate(() => document.activeElement.blur());
-  await ed.keyboard.press('Delete');
-  await sleep(300);
+  await kb.press('Delete');
   ok('Tastatur: Entf löscht Widget', /id: lbl_2\b/.test(y1) && !/id: lbl_2\b/.test(await yamlOf(ed)));
-  await ctrl(ed, 'z');
+  await kb.press('z', { ctrl: true });
   ok('Tastatur: Strg+Z stellt wieder her', /id: lbl_2\b/.test(await yamlOf(ed)));
-  await ctrl(ed, 'y');
+  await kb.press('y', { ctrl: true });
   ok('Tastatur: Strg+Y wiederholt', !/id: lbl_2\b/.test(await yamlOf(ed)));
-  await ctrl(ed, 'z');
+  await kb.press('z', { ctrl: true });
 
   // Code-Editor
   const code = await yamlOf(ed);
@@ -218,10 +218,8 @@ async function functional(browser, base, ok, errors) {
   ok('Seiten: hinzufügen', (await pages()) === p0 + 1);
   await ed.evaluate(() => [...document.querySelectorAll('button')].filter((b) => b.textContent.trim() === '✎').pop()?.click());
   await sleep(300);
-  await ctrl(ed, 'a');
-  await ed.keyboard.type('QA page');
-  await ed.keyboard.press('Enter');
-  await sleep(300);
+  await kb.fill('QA page');
+  await kb.submit();
   ok('Seiten: umbenennen per Enter', /QA page/.test(await text(ed)));
   await ed.evaluate(() => document.querySelector('[aria-label="Delete current page"]')?.click());
   await sleep(300);
@@ -235,7 +233,7 @@ async function functional(browser, base, ok, errors) {
   await sleep(700);
   await ed.evaluate(() => [...document.querySelectorAll('[role=dialog] button')].find((x) => /insert/i.test(x.textContent + x.title))?.click());
   await sleep(500);
-  await ed.keyboard.press('Escape');
+  await kb.press('Escape');
   ok('Vorlagen: Widget-Vorlage einfügen', (await count()) > c0);
   const exported = await ed.evaluate(() => new Promise((res) => {
     const orig = HTMLAnchorElement.prototype.click;
@@ -251,26 +249,26 @@ async function functional(browser, base, ok, errors) {
   await clickText(ed, '[role=dialog] button', /Save state now|snapshot/i);
   await sleep(500);
   ok('Verlauf: Stand sichern', (await v()) === v0 + 1);
-  await ed.keyboard.press('Escape');
-  await sleep(300);
+  await kb.press('Escape');
 
   // Sidepanel ↔ Editor
   const sp = await openPage(browser, base, 'sidepanel.html', errors);
-  await sp.setViewport({ width: 400, height: 850 });
+  await viewport(sp, 400, 850);
   await sleep(3500);
   await sp.select('select[aria-label]', dev);
   await sleep(2500);
-  await ed.bringToFront();
+  await front(ed);
   await clickText(ed, 'button', /^Button$/);
   await sleep(1200);
-  await sp.bringToFront();
+  await front(sp);
   ok('Sync: neues Widget erscheint in der Sidebar', (await sp.evaluate(() => document.body.innerText)).includes('Button'));
 
   // KI ohne / mit ungültigem Key
   ok('KI: Hinweis ohne Key', /No OpenRouter key/i.test(await text(sp)));
   await setSettings(sp, { ai: { apiKey: 'sk-or-invalid-e2e', model: 'google/gemini-2.0-flash-001', baseUrl: 'https://openrouter.ai/api/v1', contextLength: 0 } });
   await sleep(600);
-  await sp.type('textarea', 'Make the background blue');
+  await sp.evaluate(() => document.querySelector('textarea')?.focus());
+  await (await keyboardFor(sp)).fill('Make the background blue');
   await clickText(sp, 'button', /^Send$/);
   await sleep(8000);
   ok('KI: ungültiger Key → Fehlermeldung, UI wieder bedienbar',
@@ -279,7 +277,7 @@ async function functional(browser, base, ok, errors) {
   await setSettings(sp, { ai: { apiKey: '', model: 'google/gemini-2.0-flash-001', baseUrl: 'https://openrouter.ai/api/v1', contextLength: 0 } });
 
   // Home Assistant nicht erreichbar → Timeout-Meldung
-  await ed.bringToFront();
+  await front(ed);
   await setSettings(ed, { ha: { url: UNREACHABLE, token: 'x' } });
   await clickText(ed, 'button', /^Load entities$/);
   await sleep(10000);

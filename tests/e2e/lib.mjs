@@ -53,6 +53,19 @@ export async function launch(which) {
   return { browser, base: `moz-extension://${FF_UUID}` };
 }
 
+/**
+ * Viewport setzen. Neuere Firefox-Versionen verbieten das für moz-extension-Seiten
+ * ("privileged scope") – dann gilt die Fenstergröße aus launch(); die Breitentests laufen in Chrome.
+ */
+export async function viewport(page, width, height) {
+  try {
+    await page.setViewport({ width, height });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function openPage(browser, base, file, errors = []) {
   const page = await browser.newPage();
   page.on('pageerror', (e) => errors.push(`[${file}] pageerror: ${e?.message ?? e}`));
@@ -147,4 +160,67 @@ export async function audit(page, lang) {
     return [...out];
   }, lang);
   return { axe, layout, leftovers };
+}
+
+/**
+ * Tastatur-Helfer. Firefox ≥ 156 erlaubt WebDriver-Eingaben auf moz-extension-Seiten nicht
+ * mehr ("privileged scope"). Dann werden dieselben Events direkt in der Seite ausgelöst – die
+ * App-Handler (keydown/input/change) sind identisch; nur native Browser-Aktionen (Enter
+ * aktiviert Button) lassen sich so nicht prüfen → `native` sagt, ob das möglich ist.
+ */
+export async function keyboardFor(page) {
+  let native = true;
+  try {
+    await page.keyboard.press('Shift');
+  } catch {
+    native = false;
+  }
+  const dispatch = (key, ctrl) =>
+    page.evaluate((key, ctrl) => {
+      const t = document.activeElement ?? document.body;
+      t.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: ctrl, bubbles: true, cancelable: true }));
+    }, key, ctrl);
+  return {
+    native,
+    async press(key, { ctrl = false } = {}) {
+      if (native) {
+        if (ctrl) await page.keyboard.down('Control');
+        await page.keyboard.press(key);
+        if (ctrl) await page.keyboard.up('Control');
+      } else await dispatch(key, ctrl);
+      await sleep(250);
+    },
+    /** Inhalt des fokussierten Felds ersetzen. */
+    async fill(text) {
+      if (native) {
+        await page.keyboard.down('Control');
+        await page.keyboard.press('a');
+        await page.keyboard.up('Control');
+        await page.keyboard.type(text);
+      } else {
+        await page.evaluate((text) => {
+          const el = document.activeElement;
+          el.value = text;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        }, text);
+      }
+    },
+    /** Eingabe abschließen (Tab → change/blur). */
+    async commit() {
+      if (native) await page.keyboard.press('Tab');
+      else await page.evaluate(() => { const el = document.activeElement; el.dispatchEvent(new Event('change', { bubbles: true })); el.blur(); });
+      await sleep(300);
+    },
+    /** Formular per Enter abschicken. */
+    async submit() {
+      if (native) await page.keyboard.press('Enter');
+      else await page.evaluate(() => document.activeElement?.form?.requestSubmit());
+      await sleep(300);
+    },
+  };
+}
+
+/** Tab nach vorne holen – in Firefox ≥ 156 für Extension-Seiten gesperrt, dort unnötig. */
+export async function front(page) {
+  await page.bringToFront().catch(() => {});
 }
