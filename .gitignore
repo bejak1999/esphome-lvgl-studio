@@ -16,3 +16,6 @@ Demo_Vorlagen/
 screenshots/
 .claude/
 
+
+# Lokale Geräte-Configs für den Rundlauf-Test (enthalten Schlüssel – nie committen)
+.roundtrip/

@@ -1848,6 +1848,9 @@ function applyFontMapping(doc: Document, fontSizeById: Map<string, number>) {
 }
 
 /** Export einer einzelnen Seite (Kurzform von {@link screensToYaml}). */
+/** lineWidth 0: lange Zeilen (z. B. einzeilige Lambdas) nicht umbrechen. */
+const STRINGIFY = { lineWidth: 0 } as const;
+
 export function screenToYaml(screen: Screen, baseYaml = ''): string {
   return screensToYaml([screen], baseYaml);
 }
@@ -1859,6 +1862,13 @@ export function screenToYaml(screen: Screen, baseYaml = ''): string {
 export function screensToYaml(pages: Screen[], baseYaml = ''): string {
   const doc = parseDocument(baseYaml);
   const list = pages.length ? pages : [];
+
+  // Config ohne LVGL (z. B. reiner Sensor) und im Editor keine Widgets angelegt → nichts
+  // hinzufügen. Sonst bekäme das Gerät beim Speichern einen leeren lvgl:-Block (ohne Display
+  // kompiliert das nicht).
+  if (baseYaml.trim() && !doc.has('lvgl') && list.length <= 1 && list.every((p) => !p.children.length)) {
+    return baseYaml;
+  }
   const allChildren: WidgetNode[] = [];
 
   // Mehrere Seiten brauchen zwingend die `pages:`-Form (sonst stünde `lvgl.widgets`
@@ -1897,7 +1907,7 @@ export function screensToYaml(pages: Screen[], baseYaml = ''): string {
   collectFontSizes(allChildren, fontSizeById);
   ensureMdiFonts(doc, fontSizeById);
   applyFontMapping(doc, fontSizeById);
-  return doc.toString();
+  return doc.toString(STRINGIFY);
 }
 
 // ---------- Import: YAML → Modell -----------------------------------------
@@ -2352,7 +2362,7 @@ export function yamlToScreens(text: string): { pages: Screen[]; yaml: string } {
     p.height = height;
     resolveRelativeSizes(p.children, width, height);
   }
-  return { pages, yaml: doc.toString() };
+  return { pages, yaml: doc.toString(STRINGIFY) };
 }
 
 /**

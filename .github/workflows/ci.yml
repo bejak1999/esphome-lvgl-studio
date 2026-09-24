@@ -20,3 +20,21 @@ jobs:
       - run: npm run build:chrome
       - name: Lint Firefox build (addons-linter)
         run: npx --yes web-ext lint -s .output/firefox-mv2
+
+  e2e:
+    # Echte Browser (Chrome for Testing + Firefox) gegen den nachgebauten device-builder.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx puppeteer browsers install firefox@stable
+      - run: npm run build
+      - run: npm run build:chrome
+      - name: E2E (Audit + Funktionen, Chrome & Firefox)
+        run: npm run test:e2e -- all
+        env:
+          HEADLESS: '1'

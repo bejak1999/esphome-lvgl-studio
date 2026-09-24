@@ -3,7 +3,7 @@ import { useSettingsStore } from '@/shared/settings';
 
 export type Language = 'en' | 'de';
 
-const translations = {
+export const translations = {
   en: {
     // SettingsForm
     settings_title_esphome: 'ESPHome device-builder',

@@ -1,0 +1,86 @@
+# Demo-Config für die E2E-Tests (fiktives Gerät, keine echten Zugangsdaten).
+esphome:
+  name: demo-display
+  friendly_name: Demo Display
+
+esp32:
+  board: esp32-p4-evboard
+  variant: esp32p4
+  framework:
+    type: esp-idf
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+
+logger:
+
+sensor:
+  - platform: homeassistant
+    id: ha_temp
+    entity_id: sensor.living_room_temperature
+    on_value:
+      - lvgl.label.update:
+          id: lbl_temp_value
+          text: !lambda 'return str_sprintf("%.1f°C", x);'
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    on_time:
+      - seconds: 0
+        then:
+          - lvgl.label.update:
+              id: time_label
+              text: !lambda 'return id(ha_time).now().strftime("%H:%M");'
+
+display:
+  - platform: mipi_dsi
+    model: JC1060P470
+    id: main_display
+
+lvgl:
+  displays:
+    - main_display
+  pages:
+    - id: main_page
+      bg_color: 0x111827
+      widgets:
+        - label:
+            id: lbl_1
+            x: 20
+            y: 10
+            text: "Smart Home"
+        - label:
+            id: time_label
+            x: 900
+            y: 10
+            text: "00:00"
+        - obj:
+            id: card_temp
+            x: 20
+            y: 60
+            width: 300
+            height: 120
+            widgets:
+              - label:
+                  id: lbl_2
+                  x: 10
+                  y: 10
+                  text: "Temperature"
+              - label:
+                  id: lbl_temp_value
+                  x: 10
+                  y: 50
+                  text: "--.-°C"
+        - button:
+            id: btn_1
+            x: 360
+            y: 60
+            width: 200
+            height: 80
+            widgets:
+              - label:
+                  text: "Light on"

@@ -46,6 +46,11 @@ function findNode(
  * JSON-Roundtrip statt `structuredClone`: Vorlagen können aus einem Store kommen und sind
  * dann reaktive Proxies – darauf wirft `structuredClone` `DataCloneError`.
  */
+/** Vergleichswert für „Modell seit dem Import unverändert?" (Seiten + Addon-Instanzen). */
+function modelFingerprint(s: { pages: unknown; addons: unknown }): string {
+  return JSON.stringify([s.pages, s.addons]);
+}
+
 /** Anzeigename einer Seite: eigener Name oder „Page n“/„Seite n“. */
 export function pageLabel(page: { name?: string }, index: number): string {
   return page.name || tr('page_default', { n: index + 1 });
@@ -119,6 +124,11 @@ export const useDocumentStore = defineStore('document', {
     // Zuletzt importiertes/normalisiertes YAML als Basis für den erhaltenden Export.
     // Leer = frisches Projekt (YAML wird aus dem Modell generiert).
     baseYaml: '',
+    // Originaltext des letzten Imports + Modell-Fingerabdruck direkt danach. Solange das Modell
+    // unverändert ist, wird exakt dieser Text exportiert – „Öffnen & Speichern" verändert eine
+    // Config damit garantiert nicht (keine Umformatierung, kein ungefragtes lvgl:/scrollable).
+    sourceYaml: '',
+    sourceModel: '',
     // Ungespeicherte Änderungen seit dem letzten Speichern/Laden (für die Warn-Anzeige).
     dirty: false,
     // Im Dokument platzierte Addon-Instanzen (siehe core/addons/). Sie werden als
@@ -161,6 +171,7 @@ export const useDocumentStore = defineStore('document', {
      * YAML-Fragmente der Addons und der Instanz-Kommentare.
      */
     exportedYaml(state): string {
+      if (state.sourceYaml && modelFingerprint(state) === state.sourceModel) return state.sourceYaml;
       const yaml = screensToYaml(state.pages, state.baseYaml);
       const merged = applyAddonYaml(
         yaml,
@@ -531,11 +542,13 @@ export const useDocumentStore = defineStore('document', {
       this.pages = pages.length ? pages : [defaultScreen()];
       this.activePage = Math.min(this.activePage, this.pages.length - 1);
       this.baseYaml = yaml;
+      this.sourceYaml = text;
       // Addon-Instanzen stehen als Kommentar im YAML – von dort kommen sie zurück, auch
       // auf einem Rechner, auf dem das Addon selbst (noch) nicht installiert ist.
       this.addons = readInstances(text);
       this.selectedId = null;
       this.selectedIds = [];
+      this.sourceModel = modelFingerprint(this);
       // Frisch geladen = deckungsgleich mit dem Gerät → nicht „ungespeichert".
       this.dirty = false;
     },
