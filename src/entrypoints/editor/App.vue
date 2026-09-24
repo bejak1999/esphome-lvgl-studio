@@ -48,12 +48,12 @@ useDocSync(); // Live-Sync mit der Sidebar
 const fileInput = ref<HTMLInputElement | null>(null);
 const yamlError = ref('');
 
-const modes: { id: Mode; label: string }[] = [
-  { id: 'design', label: 'Design' },
-  { id: 'split', label: 'Split' },
-  { id: 'code', label: 'Code' },
-  { id: 'preview', label: 'Preview' },
-];
+const modes = computed<{ id: Mode; label: string }[]>(() => [
+  { id: 'design', label: t('mode_design') },
+  { id: 'split', label: t('mode_split') },
+  { id: 'code', label: t('mode_code') },
+  { id: 'preview', label: t('mode_preview') },
+]);
 
 const showPalette = computed(() => mode.value === 'design');
 const showCanvas = computed(() => mode.value !== 'code');
@@ -79,7 +79,7 @@ async function onFileChosen(ev: Event) {
     yamlError.value = '';
     mode.value = 'split';
   } catch (e) {
-    yamlError.value = 'Import fehlgeschlagen: ' + (e as Error).message;
+    yamlError.value = t('editor_import_failed') + (e as Error).message;
   }
   input.value = '';
 }
@@ -100,14 +100,14 @@ function applyYaml(text: string) {
     doc.importYaml(text);
     yamlError.value = '';
   } catch (e) {
-    yamlError.value = 'YAML-Fehler: ' + (e as Error).message;
+    yamlError.value = t('editor_yaml_error') + (e as Error).message;
   }
 }
 
 // ---- Tastatur -----------------------------------------------------------
 function onKey(ev: KeyboardEvent) {
   const el = ev.target as HTMLElement;
-  const typing = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA';
+  const typing = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
   const meta = ev.ctrlKey || ev.metaKey;
   if (meta && ev.key.toLowerCase() === 'z' && !ev.shiftKey) {
     ev.preventDefault();
@@ -130,7 +130,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 </script>
 
 <template>
-  <div class="flex h-screen w-screen flex-col overflow-hidden bg-[#0b1220] text-gray-200">
+  <main class="flex h-screen w-screen flex-col overflow-hidden bg-[#0b1220] text-gray-200">
     <input
       ref="fileInput"
       type="file"
@@ -151,6 +151,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
         <button v-for="m in modes" :key="m.id"
           class="rounded-md px-3 py-1 text-xs transition-colors"
           :class="mode === m.id ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'"
+          :aria-pressed="mode === m.id"
           @click="mode = m.id">
           {{ m.label }}
         </button>
@@ -195,7 +196,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
           <div class="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
             <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">ESPHome YAML</span>
             <span v-if="yamlError" class="text-[10px] text-red-400">{{ yamlError }}</span>
-            <span v-else class="text-[10px] text-emerald-500/70">{{ t('editor_yaml_hint') }}</span>
+            <span v-else class="text-[10px] text-emerald-400">{{ t('editor_yaml_hint') }}</span>
           </div>
           <CodeEditor :model-value="doc.exportedYaml" :highlight-line="selectedCodeLine" @change="applyYaml" />
           <ValidationPanel />
@@ -203,7 +204,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
       </div>
 
       <!-- Rechts: Baum + Properties -->
-      <aside v-if="showPanels" class="w-64 shrink-0 overflow-y-auto border-l border-white/10 bg-[#0e1626] p-3">
+      <aside v-if="showPanels" :aria-label="t('editor_panel_label')" class="w-64 shrink-0 overflow-y-auto border-l border-white/10 bg-[#0e1626] p-3">
         <TreePanel />
         <PropertiesPanel />
       </aside>
@@ -212,5 +213,5 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     <TemplatesModal v-if="showTemplates" @close="showTemplates = false" />
     <VersionHistoryModal v-if="showHistory" @close="showHistory = false" />
     <AddonConfigModal v-if="addonIid" :iid="addonIid" @close="addonIid = null" />
-  </div>
+  </main>
 </template>

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { browser } from 'wxt/browser';
 import type { AddonManifest, InstalledAddon } from './types';
 import { onlyHints, validateManifest, withDefaults } from './apply';
+import { tr } from '@/shared/i18n';
 
 /**
  * Verwaltung der installierten Addons.
@@ -124,7 +125,7 @@ export const useAddonsStore = defineStore('addons', {
       try {
         parsed = JSON.parse(text);
       } catch (e) {
-        const msg = `Kein gültiges JSON: ${(e as Error).message}`;
+        const msg = tr('addon_bad_json', { msg: (e as Error).message });
         this.error = msg;
         return [msg];
       }
@@ -157,13 +158,13 @@ export const useAddonsStore = defineStore('addons', {
       try {
         const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) {
-          const msg = `Download fehlgeschlagen: HTTP ${res.status}`;
+          const msg = tr('addon_download_http', { status: res.status });
           this.error = msg;
           return [msg];
         }
         return await this.installFromJson(await res.text(), 'url', url);
       } catch (e) {
-        const msg = `Download fehlgeschlagen: ${(e as Error).message}`;
+        const msg = tr('addon_download_failed', { msg: (e as Error).message });
         this.error = msg;
         return [msg];
       } finally {
@@ -174,7 +175,7 @@ export const useAddonsStore = defineStore('addons', {
     /** Holt ein per URL installiertes Addon erneut von seiner Quelle. */
     async updateFromSource(id: string): Promise<string[]> {
       const entry = this.installed.find((a) => a.manifest.id === id);
-      if (!entry?.sourceUrl) return ['Für dieses Addon ist keine Quell-URL gespeichert.'];
+      if (!entry?.sourceUrl) return [tr('addon_no_source')];
       return this.installFromUrl(entry.sourceUrl);
     },
 

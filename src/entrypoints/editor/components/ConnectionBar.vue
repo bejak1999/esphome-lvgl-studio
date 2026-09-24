@@ -77,7 +77,7 @@ async function openDevice() {
     const yaml = await esphome.openDevice(selectedConfig.value);
     await versions.load(selectedConfig.value);
     // Den geladenen Stand als Ausgangspunkt in die Historie legen.
-    await versions.snapshot(yaml, 'Gerät geladen');
+    await versions.snapshot(yaml, t('snap_loaded'));
     doc.importYaml(yaml); // lädt das echte Geräte-YAML in den Editor
   } catch (e) {
     esphome.error = (e as Error).message;
@@ -91,7 +91,7 @@ async function saveDevice() {
     if (esphome.currentConfiguration && versions.device !== esphome.currentConfiguration) {
       await versions.load(esphome.currentConfiguration);
     }
-    await versions.snapshot(yaml, 'Gerät gespeichert');
+    await versions.snapshot(yaml, t('snap_saved'));
     await esphome.saveDevice(yaml);
     doc.markSaved();
     saveStatus.value = t('conn_saved');
@@ -136,6 +136,7 @@ function loadEntities() {
         <select
           v-else
           v-model="selectedConfig"
+          :aria-label="t('conn_select_device')"
           class="rounded border border-white/10 bg-[#111827] px-1.5 py-0.5 text-gray-200 focus:outline-none"
           @change="openDevice"
         >

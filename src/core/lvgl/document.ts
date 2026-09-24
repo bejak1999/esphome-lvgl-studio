@@ -7,6 +7,7 @@ import { screensToYaml, yamlToScreens } from '../yaml/engine';
 import type { AddonInstance, ResolvedWidget } from '../addons/types';
 import { applyAddonYaml } from '../addons/yamlMerge';
 import { readInstances, writeInstances } from '../addons/instances';
+import { tr } from '@/shared/i18n';
 
 /** Sammelt alle IDs im Baum (für Kollisionsfreiheit neuer IDs). */
 function collectIds(nodes: WidgetNode[], acc: Set<string> = new Set()): Set<string> {
@@ -45,6 +46,11 @@ function findNode(
  * JSON-Roundtrip statt `structuredClone`: Vorlagen können aus einem Store kommen und sind
  * dann reaktive Proxies – darauf wirft `structuredClone` `DataCloneError`.
  */
+/** Anzeigename einer Seite: eigener Name oder „Page n“/„Seite n“. */
+export function pageLabel(page: { name?: string }, index: number): string {
+  return page.name || tr('page_default', { n: index + 1 });
+}
+
 export function cloneWithNewIds(node: WidgetNode, used: Set<string>): WidgetNode {
   const id = nextId(node.type, used);
   used.add(id);
@@ -84,7 +90,9 @@ export function scaleWidgetTree(node: WidgetNode, f: number): WidgetNode {
 function defaultScreen(): Screen {
   return {
     id: 'main_page',
-    name: 'Seite 1',
+    // Leer = Standardname in der aktuellen UI-Sprache (siehe pageLabel) – beim Anlegen des
+    // Stores sind die Einstellungen (Sprache) evtl. noch nicht geladen.
+    name: '',
     width: 480,
     height: 320,
     bg_color: '#111827',
@@ -438,7 +446,7 @@ export const useDocumentStore = defineStore('document', {
       const id = nextPageId(this.pages);
       this.pages.push({
         id,
-        name: name || `Seite ${this.pages.length + 1}`,
+        name: name || tr('page_default', { n: this.pages.length + 1 }),
         width: base.width,
         height: base.height,
         bg_color: base.bg_color,

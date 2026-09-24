@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 import { OpenRouterClient, supportsImageInput, type ModelInfo } from '@/core/agent/openrouter';
 import type { useSettingsStore } from './settings';
+import { tr } from '@/shared/i18n';
 
 type SettingsStore = ReturnType<typeof useSettingsStore>;
 
@@ -17,7 +18,7 @@ export function useModelList(settings: SettingsStore) {
 
   async function load() {
     if (!settings.settings.ai.apiKey) {
-      error.value = 'API-Key nötig, um Modelle zu laden.';
+      error.value = tr('err_models_key');
       return;
     }
     loading.value = true;
@@ -33,7 +34,7 @@ export function useModelList(settings: SettingsStore) {
         .sort((a, b) => a.id.localeCompare(b.id));
       // Aktuelles Modell nicht in der Liste? Als Auswahl ergänzen.
       if (settings.settings.ai.model && !models.value.some((m) => m.id === settings.settings.ai.model)) {
-        models.value.unshift({ id: settings.settings.ai.model, name: settings.settings.ai.model + ' (aktuell)' });
+        models.value.unshift({ id: settings.settings.ai.model, name: `${settings.settings.ai.model} ${tr('models_current')}` });
       }
       syncContextLength();
     } catch (e) {

@@ -5,6 +5,8 @@ import { isContainer } from './types';
 import { parseLinePoints } from './line';
 import { ENTITY_STATES_KEY, ENTITY_VALUES_KEY, type EntityValue } from '../ha/store';
 import qrcode from 'qrcode-generator';
+import { useI18n } from '@/shared/i18n';
+const { t } = useI18n();
 
 const props = defineProps<{
   node: WidgetNode;
@@ -539,9 +541,9 @@ onBeforeUnmount(() => {
 });
 const imgLabel = computed<string>(() => {
   const src = String(p.value.img_source ?? '');
-  if (src === 'online') return String(p.value.img_url ?? 'Online-Bild');
-  if (src === 'file') return String(p.value.img_file ?? 'Datei');
-  if (src === 'ref') return String(p.value.img_ref ?? 'Bild-id');
+  if (src === 'online') return String(p.value.img_url ?? t('img_online'));
+  if (src === 'file') return String(p.value.img_file ?? t('img_file'));
+  if (src === 'ref') return String(p.value.img_ref ?? t('img_ref'));
   return '';
 });
 
@@ -790,7 +792,7 @@ function onPointerDown(ev: PointerEvent) {
       :style="{ ...containerStyle, color: p.text_color as string }"
     >
       <span v-if="p.text">{{ p.text }}</span>
-      <span v-else class="text-gray-500">Text…</span>
+      <span v-else class="text-gray-500">{{ t('canvas_text_placeholder') }}</span>
     </div>
 
     <!-- Spinner -->

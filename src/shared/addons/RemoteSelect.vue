@@ -11,6 +11,8 @@ import { computed, onMounted, ref, watch } from 'vue';
 import type { FieldSpec } from '@/core/addons/types';
 import { getPath, render } from '@/core/addons/template';
 import type { TemplateContext } from '@/core/addons/template';
+import { tr, useI18n } from '@/shared/i18n';
+const { t } = useI18n();
 
 const props = defineProps<{
   spec: FieldSpec;
@@ -55,7 +57,7 @@ function toOptions(data: unknown): Option[] {
 
 async function load() {
   if (!url.value) {
-    error.value = 'Keine URL – bitte die Addon-Einstellungen ausfüllen.';
+    error.value = t('remote_no_url');
     options.value = [];
     return;
   }
@@ -67,7 +69,7 @@ async function load() {
     const json = (await res.json()) as unknown;
     const data = props.spec.itemsPath ? getPath(json as Record<string, unknown>, props.spec.itemsPath) : json;
     options.value = toOptions(data);
-    if (!options.value.length) error.value = 'Antwort enthielt keine Einträge.';
+    if (!options.value.length) error.value = t('remote_empty');
     // Noch nichts gewählt → erste Option übernehmen, damit die Vorschau sofort etwas zeigt.
     if (!props.modelValue && options.value.length) emit('update:modelValue', options.value[0].value);
   } catch (e) {
@@ -96,14 +98,14 @@ watch(url, load);
       <input
         v-else
         :value="modelValue"
-        :placeholder="spec.placeholder || 'Wert eintragen…'"
+        :placeholder="spec.placeholder || t('remote_placeholder')"
         class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
         @change="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       />
       <button
         class="rounded-lg border border-white/10 px-2 py-1 text-[11px] text-gray-300 hover:bg-white/5 disabled:opacity-50"
         :disabled="loading"
-        title="Liste neu laden"
+        :title="t('remote_reload')" :aria-label="t('remote_reload')"
         @click="load"
       >
         {{ loading ? '…' : '⟳' }}
@@ -111,9 +113,9 @@ watch(url, load);
     </div>
     <div class="flex items-center justify-between">
       <p v-if="error" class="text-[10px] text-amber-400">{{ error }}</p>
-      <p v-else class="truncate text-[10px] text-gray-600" :title="url">{{ options.length }} Einträge</p>
+      <p v-else class="truncate text-[10px] text-gray-600" :title="url">{{ tr('remote_count', { n: options.length }) }}</p>
       <label v-if="options.length" class="ml-2 flex shrink-0 items-center gap-1 text-[10px] text-gray-500">
-        <input v-model="manual" type="checkbox" /> selbst eingeben
+        <input v-model="manual" type="checkbox" /> {{ t('remote_manual') }}
       </label>
     </div>
   </div>

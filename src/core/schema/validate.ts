@@ -1,6 +1,7 @@
 import type { SchemaField, SchemaIssue } from './types';
 import { getWidgetFields } from './lvgl';
 import { listWidgets } from '../yaml/engine';
+import { tr } from '@/shared/i18n';
 
 /** Keys, die auf jedem LVGL-Widget erlaubt sind, unabhängig vom Schema-Detail. */
 const UNIVERSAL = new Set(['id', 'widgets', 'state', 'styles', 'style', 'group', 'skip', 'layout']);
@@ -28,7 +29,7 @@ export function validateWidgetKeys(
         widgetId,
         widgetType,
         key,
-        message: `Unbekannter Key '${key}' für Widget '${widgetType}'.`,
+        message: tr('val_unknown_key', { key, type: widgetType }),
       });
     }
   }

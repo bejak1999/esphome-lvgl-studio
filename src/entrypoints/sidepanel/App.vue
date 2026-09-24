@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
-import { useI18n } from '@/shared/i18n';
+import { tr, useI18n } from '@/shared/i18n';
 import { useSettingsStore } from '@/shared/settings';
 import { openEditorTab } from '@/shared/messaging';
-import { useDocumentStore } from '@/core/lvgl/document';
+import { pageLabel, useDocumentStore } from '@/core/lvgl/document';
 import { useSchemaStore } from '@/core/schema/store';
 import { useEsphomeStore } from '@/core/esphome/store';
 import {
@@ -79,13 +79,6 @@ const attachments = ref<Attachment[]>([]);
 const dragOver = ref(false);
 const imageInput = ref<HTMLInputElement | null>(null);
 const feed = ref<FeedItem[]>([]);
-onMounted(() => {
-  if (!feed.value.length) {
-    feed.value.push({ role: 'assistant', text: settings.settings.language === 'de'
-      ? 'Hi! Beschreibe dein Dashboard oder deine ESPHome-Config – ich schreibe & prüfe das YAML. Du kannst auch ein Bild eines Layouts anhängen.'
-      : 'Hi! Describe your dashboard or ESPHome config – I will write & validate the YAML. You can also attach an image of a layout.' });
-  }
-});
 
 // Auto-Scroll: nur ans Ende springen, wenn der Nutzer ohnehin schon (nahe) unten ist.
 // Scrollt er hoch, um Älteres zu lesen, bleibt die Ansicht dort stehen.
@@ -149,7 +142,7 @@ function clearHistory() {
   history.splice(0, history.length);
   promptTokens.value = 0;
   completionTokens.value = 0;
-  feed.value.push({ role: 'step', text: '🧹 Chat-Verlauf geleert – die KI startet beim nächsten Befehl ohne Vorgeschichte.' });
+  feed.value.push({ role: 'step', text: t('side_history_cleared') });
 }
 
 const hasKey = computed(() => settings.loaded && !!settings.settings.ai.apiKey);
@@ -179,6 +172,12 @@ async function capturePreview(): Promise<string | null> {
 
 onMounted(async () => {
   await settings.load();
+  // Begrüßung erst nach dem Laden der Einstellungen – sonst immer in der Standardsprache.
+  if (!feed.value.length) {
+    feed.value.push({ role: 'assistant', text: settings.settings.language === 'de'
+      ? 'Hi! Beschreibe dein Dashboard oder deine ESPHome-Config – ich schreibe & prüfe das YAML. Du kannst auch ein Bild eines Layouts anhängen.'
+      : 'Hi! Describe your dashboard or ESPHome config – I will write & validate the YAML. You can also attach an image of a layout.' });
+  }
   // Schema der eingestellten Version im Hintergrund laden (für statische Validierung).
   schema.loadLvgl(settings.settings.schema.version || 'dev').catch(() => {});
   // Beim Öffnen automatisch verbinden und – falls man in ESPHome auf einem Gerät ist –
@@ -256,7 +255,7 @@ async function openSidebarDevice(configuration: string) {
     const yaml = await esphome.openDevice(configuration);
     await versions.load(configuration);
     const isDe = settings.settings.language === 'de';
-    await versions.snapshot(yaml, isDe ? 'Gerät geladen' : 'Device loaded');
+    await versions.snapshot(yaml, t('snap_loaded'));
     doc.importYaml(yaml);
     feed.value.push({
       role: 'assistant',
@@ -486,7 +485,7 @@ function buildContext(): AgentContext {
     getScreenInfo: () => ({
       width: doc.screen.width,
       height: doc.screen.height,
-      pages: doc.pages.map((p) => ({ id: p.id, name: p.name, widgets: p.children.length })),
+      pages: doc.pages.map((p, i) => ({ id: p.id, name: pageLabel(p, i), widgets: p.children.length })),
       activePage: doc.activePage,
     }),
     capturePreview,
@@ -607,7 +606,7 @@ function readFile(file: File): Promise<Attachment> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     const asText = isTextFile(file);
-    reader.onerror = () => reject(reader.error ?? new Error('Datei konnte nicht gelesen werden'));
+    reader.onerror = () => reject(reader.error ?? new Error(t('side_file_read')));
     reader.onload = () =>
       resolve(
         asText
@@ -659,7 +658,7 @@ async function send() {
   const text = input.value.trim();
   if ((!text && !attachments.value.length) || running.value) return;
   if (!hasKey.value) {
-    feed.value.push({ role: 'error', text: 'Kein OpenRouter-Key gesetzt (Einstellungen).' });
+    feed.value.push({ role: 'error', text: t('side_no_key') });
     return;
   }
 
@@ -678,7 +677,7 @@ async function send() {
   // Vor der KI-Änderung einen Wiederherstellungspunkt sichern (falls sie Mist baut).
   if (esphome.currentConfiguration) {
     if (versions.device !== esphome.currentConfiguration) await versions.load(esphome.currentConfiguration);
-    await versions.snapshot(doc.exportedYaml, 'vor KI-Änderung');
+    await versions.snapshot(doc.exportedYaml, t('snap_before_ai'));
   }
 
   try {
@@ -708,7 +707,7 @@ async function send() {
         doc.markSaved();
         feed.value.push({ role: 'assistant', text: `💾 Auf Gerät „${esphome.currentConfiguration}" gespeichert.` });
       } catch (e) {
-        feed.value.push({ role: 'error', text: 'Speichern aufs Gerät fehlgeschlagen: ' + (e as Error).message });
+        feed.value.push({ role: 'error', text: t('side_save_failed') + (e as Error).message });
       }
     }
   } catch (e) {
@@ -720,7 +719,7 @@ async function send() {
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-[#0b1220] text-gray-200">
+  <main class="flex h-full flex-col bg-[#0b1220] text-gray-200">
     <input ref="imageInput" type="file" accept="image/*,application/pdf,text/*,.txt,.md,.csv,.json,.yaml,.yml,.log,.ini,.conf,.xml,.ino,.cpp,.h,.py" multiple class="hidden" @change="onImageChosen" />
 
     <!-- Header -->
@@ -748,6 +747,7 @@ async function send() {
         <span class="shrink-0 text-gray-400">v{{ esphome.esphomeVersion ?? '?' }}</span>
         <select
           v-model="sidebarConfig"
+          :aria-label="t('sidepanel_device')"
           class="min-w-0 flex-1 rounded border border-white/10 bg-[#111827] px-1.5 py-0.5 text-gray-200 focus:outline-none"
           @change="openSidebarDevice(sidebarConfig)"
         >
@@ -818,10 +818,10 @@ async function send() {
             :class="i === doc.activePage
               ? 'border-blue-500/50 bg-blue-500/20 text-blue-200'
               : 'border-white/10 text-gray-400 hover:bg-white/5'"
-            :title="`Seiten-id: ${p.id}`"
+            :title="tr('page_id_short', { id: p.id })"
             @click="doc.setActivePage(i)"
           >
-            {{ p.name }}
+            {{ pageLabel(p, i) }}
           </button>
         </div>
       </div>
@@ -945,7 +945,7 @@ async function send() {
             <div class="select-text whitespace-pre-wrap break-words">{{ m.text }}</div>
             <button
               class="absolute -right-1.5 -top-2 rounded border border-white/10 bg-[#0b1220] px-1 py-0.5 text-[9px] text-gray-400 opacity-0 hover:text-white group-hover:opacity-100"
-              title="Kopieren"
+              :title="t('common_copy')" :aria-label="t('common_copy')"
               @click="copyText(m.text)"
             >
               ⧉
@@ -971,7 +971,7 @@ async function send() {
             <span v-else-if="isPdf(a)" class="flex h-6 w-6 items-center justify-center rounded bg-red-500/20 text-[9px] text-red-300">PDF</span>
             <span v-else class="flex h-6 w-6 items-center justify-center rounded bg-sky-500/20 text-[11px] text-sky-300">📄</span>
             <span class="max-w-24 truncate">{{ a.name }}</span>
-            <button class="text-gray-500 hover:text-gray-200" @click="attachments.splice(i, 1)">✕</button>
+            <button class="text-gray-500 hover:text-gray-200" :title="t('common_remove')" :aria-label="t('common_remove')" @click="attachments.splice(i, 1)">✕</button>
           </div>
         </div>
         <div class="relative flex items-end gap-2">
@@ -1022,11 +1022,11 @@ async function send() {
     </section>
 
     <!-- Einstellungen direkt in der Sidebar -->
-    <div v-if="showSettings" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3" @click.self="showSettings = false">
+    <div v-if="showSettings" v-dialog="() => (showSettings = false)" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3" @click.self="showSettings = false">
       <div class="flex max-h-[88vh] w-full max-w-sm flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
         <header class="flex items-center justify-between border-b border-white/10 px-3 py-2">
-          <span class="text-[12px] font-semibold text-gray-200">{{ t('sidepanel_modal_settings') }}</span>
-          <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" @click="showSettings = false">✕</button>
+          <h2 class="text-[12px] font-semibold text-gray-200">{{ t('sidepanel_modal_settings') }}</h2>
+          <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" :title="t('common_close')" :aria-label="t('common_close')" @click="showSettings = false">✕</button>
         </header>
 
         <div class="min-h-0 flex-1 overflow-y-auto p-3">
@@ -1038,11 +1038,12 @@ async function send() {
     <!-- Bestätigungs-Modus: Code-Änderung vor dem Übernehmen prüfen -->
     <div
       v-if="pendingChange"
+      v-dialog="rejectPending"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3"
     >
       <div class="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
         <header class="flex items-center gap-2 border-b border-white/10 px-3 py-2 text-[12px] text-gray-200">
-          <span>{{ t('sidepanel_confirm_change') }}</span>
+          <h2 class="font-normal">{{ t('sidepanel_confirm_change') }}</h2>
           <span class="text-emerald-400">+{{ pendingChange.diff.added }}</span>
           <span class="text-red-400">−{{ pendingChange.diff.removed }}</span>
         </header>
@@ -1075,5 +1076,5 @@ async function send() {
         </footer>
       </div>
     </div>
-  </div>
+  </main>
 </template>

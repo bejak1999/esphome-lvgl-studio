@@ -40,7 +40,7 @@ async function save() {
   <div class="space-y-3 text-[11px]">
     <!-- Language -->
     <div>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_language') }}</p>
+      <label class="mb-1 block font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_language') }}</label>
       <select v-model="settings.settings.language" class="set-input">
         <option value="en">🇬🇧 English</option>
         <option value="de">🇩🇪 Deutsch</option>
@@ -79,12 +79,12 @@ async function save() {
           </label>
         </div>
       </div>
-      <select v-if="!customModel && models.length" v-model="settings.settings.ai.model" class="set-input" @change="syncContextLength">
+      <select v-if="!customModel && models.length" v-model="settings.settings.ai.model" :aria-label="t('settings_model')" class="set-input" @change="syncContextLength">
         <option v-for="m in models" :key="m.id" :value="m.id">
           {{ m.name || m.id }}{{ m.context_length ? ` – ${formatTokens(m.context_length)}` : '' }}
         </option>
       </select>
-      <input v-else v-model="settings.settings.ai.model" class="set-input" placeholder="google/gemini-2.0-flash-001" />
+      <input v-else v-model="settings.settings.ai.model" :aria-label="t('settings_model')" class="set-input" placeholder="google/gemini-2.0-flash-001" />
       <p v-if="modelsError" class="mt-1 text-[10px] text-amber-400">{{ modelsError }}</p>
       <p v-else class="mt-1 text-[10px] text-gray-500">{{ t('settings_only_vision_models') }}</p>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue';
-import { useI18n } from '@/shared/i18n';
+import { tr, useI18n } from '@/shared/i18n';
 import { browser } from 'wxt/browser';
 import { useEsphomeStore } from '@/core/esphome/store';
 import { useSettingsStore } from '@/shared/settings';
@@ -38,25 +38,25 @@ let session: SerialLogSession | null = null;
 
 function errText(e: unknown, what: string): string {
   const err = e as { name?: string; message?: string };
-  const name = err?.name ?? 'Fehler';
+  const name = err?.name ?? t('serial_error');
   if (name === 'NotFoundError' || isPortCancelled(e)) {
     // Leere Auswahl: entweder abgebrochen ODER Firefox sieht keinen Port (Treiber fehlt /
     // Port ist von einem anderen Tab wie web.esphome.io belegt).
-    return `${what}: kein Port verfügbar/gewählt. Falls der ESP angeschlossen ist: andere Tabs schließen, die den Port belegen (z. B. web.esphome.io), und den USB-Treiber (CP210x/CH34x) prüfen.`;
+    return tr('serial_no_port', { what });
   }
-  return `${what} fehlgeschlagen (${name}): ${err?.message ?? String(e)}`;
+  return tr('serial_failed', { what, name, msg: err?.message ?? String(e) });
 }
 
 async function flash() {
   if (flashing.value) return;
   const url = esphome.downloadUrl();
-  if (!url) { status.value = 'Kein kompiliertes Gerät – erst in der Seitenleiste kompilieren.'; return; }
+  if (!url) { status.value = t('serial_no_build'); return; }
   // Port-Dialog ZUERST (User-Geste), dann erst die Firmware laden.
   let port: unknown;
-  try { port = await requestSerialPort(); } catch (e) { status.value = errText(e, 'USB-Flashen'); return; }
+  try { port = await requestSerialPort(); } catch (e) { status.value = errText(e, t('serial_what_flash')); return; }
   flashing.value = true;
   progress.value = 0;
-  status.value = 'Firmware wird geladen…';
+  status.value = t('serial_loading_fw');
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Download HTTP ${res.status}`);
@@ -65,9 +65,9 @@ async function flash() {
       onProgress: (p) => (progress.value = p),
       onLog: (l) => { if (l.trim()) status.value = l.trim().slice(0, 120); },
     });
-    status.value = '✅ Per USB geflasht – Gerät startet neu.';
+    status.value = t('serial_flashed');
   } catch (e) {
-    status.value = errText(e, 'USB-Flashen');
+    status.value = errText(e, t('serial_what_flash'));
   } finally {
     flashing.value = false;
   }
@@ -81,7 +81,7 @@ async function toggleLogs() {
     return;
   }
   let port: unknown;
-  try { port = await requestSerialPort(); } catch (e) { status.value = errText(e, 'USB-Logs'); return; }
+  try { port = await requestSerialPort(); } catch (e) { status.value = errText(e, t('serial_what_logs')); return; }
   try {
     lines.value = [];
     showLog.value = true;
@@ -96,7 +96,7 @@ async function toggleLogs() {
     );
     active.value = true;
   } catch (e) {
-    status.value = errText(e, 'Serieller Port');
+    status.value = errText(e, t('serial_what_port'));
   }
 }
 
@@ -110,7 +110,7 @@ async function toggleLogs() {
  */
 async function sendToAi() {
   const tail = lines.value.slice(-200).join('\n').slice(-6000);
-  if (!tail.trim()) { status.value = 'Noch keine Logs erfasst.'; return; }
+  if (!tail.trim()) { status.value = t('serial_no_logs'); return; }
 
   const b = browser as unknown as {
     sidebarAction?: { open: () => Promise<void> };
@@ -137,8 +137,8 @@ async function sendToAi() {
 
   await browser.storage.local.set({ serial_handoff: { text: tail, at: Date.now() } });
   status.value = opened
-    ? 'Logs an die KI (Seitenleiste) übergeben.'
-    : 'Logs bereitgestellt – öffne die Seitenleiste, die KI erhält sie automatisch.';
+    ? t('serial_logs_sent')
+    : t('serial_logs_ready');
 }
 
 onBeforeUnmount(() => { session?.stop(); });

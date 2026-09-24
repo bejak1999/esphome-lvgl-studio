@@ -1,0 +1,4 @@
+{
+  "extName": { "message": "ESPHome LVGL Studio" },
+  "extDescription": { "message": "Visual LVGL dashboard editor for ESPHome with an AI agent (OpenRouter) and auto-debug loop." }
+}

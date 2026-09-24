@@ -54,7 +54,7 @@ async function liveValidate() {
       {{ `${t('val_schema_error')}${schema.error}` }}
     </div>
 
-    <ul v-if="schema.loaded && issues.length" class="max-h-32 overflow-y-auto px-3 pb-2">
+    <ul v-if="schema.loaded && issues.length" class="max-h-32 overflow-y-auto px-3 pb-2" tabindex="0">
       <li v-for="(issue, i) in issues" :key="i" class="flex items-start gap-2 py-0.5 text-[11px]">
         <span :class="issue.level === 'warning' ? 'text-amber-400' : 'text-sky-400'">
           {{ issue.level === 'warning' ? '⚠' : 'ℹ' }}
@@ -82,7 +82,7 @@ async function liveValidate() {
         {{ t('val_live_check') }}
       </button>
     </div>
-    <ul v-if="esphome.deviceIssues.length" class="max-h-32 overflow-y-auto px-3 pb-2">
+    <ul v-if="esphome.deviceIssues.length" class="max-h-32 overflow-y-auto px-3 pb-2" tabindex="0">
       <li v-for="(iss, i) in esphome.deviceIssues" :key="i" class="flex items-start gap-2 py-0.5 text-[11px]">
         <span class="text-red-400">✕</span>
         <span class="text-gray-300">

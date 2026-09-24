@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { fetchEntities, type HaEntity } from './client';
+import { tr } from '@/shared/i18n';
 
 // Injection-Keys für die Entity-Reflexion (Editor-Canvas → WidgetView-Vorschau).
 export const ENTITY_STATES_KEY = 'lvglEntityStates';
@@ -68,7 +69,7 @@ export const useHaStore = defineStore('ha', {
   actions: {
     async load(baseUrl: string, token: string) {
       if (!baseUrl || !token) {
-        this.error = 'HA-URL und Token in den Einstellungen nötig.';
+        this.error = tr('err_ha_missing');
         return;
       }
       this.loading = true;

@@ -1,10 +1,31 @@
 @import "tailwindcss";
 /* Material Design Icons – ESPHome-LVGL nutzt MDI-Glyphen für Icons. Wird über den
-   Font-Stack der Text-Widgets genutzt (per-Glyph-Fallback zeigt Icons via MDI). */
-@import "@mdi/font/css/materialdesignicons.min.css";
+   Font-Stack der Text-Widgets genutzt (per-Glyph-Fallback zeigt Icons via MDI).
+   Nur die Schrift (woff2) – die ~7000 `.mdi-*`-Klassen und die eot/ttf/woff-Varianten aus
+   materialdesignicons.css braucht die Extension nicht (spart ~3 MB im Paket). */
+@font-face {
+  font-family: "Material Design Icons";
+  src: url("@mdi/font/fonts/materialdesignicons-webfont.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
 
 :root {
   color-scheme: dark;
+}
+
+/* Kontrast (WCAG AA ≥ 4.5:1 auf den dunklen Flächen #0b1220 … #111827): die Standard-Grautöne
+   500/600 sind dort zu schwach (3,7 bzw. 2,4:1) und werden für Hinweistexte genutzt. */
+@theme {
+  --color-gray-500: #8a93a3;
+  --color-gray-600: #7d8595;
+}
+
+/* Sichtbarer Tastatur-Fokus – auch dort, wo Komponenten `focus:outline-none` setzen. */
+:focus-visible {
+  outline: 2px solid #60a5fa !important;
+  outline-offset: 1px;
 }
 
 html,

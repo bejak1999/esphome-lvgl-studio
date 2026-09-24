@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 import { ICONS, ICON_CATEGORIES, iconGlyph, type IconDef } from '@/core/lvgl/icons';
 import { MDI_ALL } from '@/core/lvgl/mdiAll';
+import { useI18n } from '@/shared/i18n';
+const { t } = useI18n();
 
 const emit = defineEmits<{ (e: 'select', glyph: string): void; (e: 'close'): void }>();
 
@@ -30,17 +32,17 @@ const filtered = computed<Pick<IconDef, 'name' | 'label' | 'code'>[]>(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-6" @click.self="emit('close')">
+  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-6" v-dialog="() => emit('close')" @click.self="emit('close')">
     <div class="flex max-h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
       <header class="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <h2 class="text-sm font-semibold text-white">Icon wählen</h2>
-        <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" @click="emit('close')">✕</button>
+        <h2 class="text-sm font-semibold text-white">{{ t('icon_title') }}</h2>
+        <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" :title="t('common_close')" :aria-label="t('common_close')" @click="emit('close')">✕</button>
       </header>
 
       <div class="border-b border-white/10 p-3">
         <input
           v-model="search"
-          placeholder="Icon suchen (durchsucht alle MDI-Icons)…"
+          :placeholder="t('icon_search')"
           class="mb-2 w-full rounded-lg border border-white/10 bg-[#111827] px-3 py-1.5 text-xs text-gray-100 focus:border-blue-500/60 focus:outline-none"
         />
         <div v-if="!search" class="flex flex-wrap gap-1">
@@ -76,7 +78,7 @@ const filtered = computed<Pick<IconDef, 'name' | 'label' | 'code'>[]>(() => {
             <span class="w-full truncate text-center text-[8px] text-gray-500">{{ i.label }}</span>
           </button>
         </div>
-        <div v-if="!filtered.length" class="py-6 text-center text-xs text-gray-500">Keine Icons gefunden.</div>
+        <div v-if="!filtered.length" class="py-6 text-center text-xs text-gray-500">{{ t('icon_none') }}</div>
       </div>
     </div>
   </div>

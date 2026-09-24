@@ -21,12 +21,10 @@ export default defineConfig({
     plugins: [tailwindcss() as never],
   }),
   manifest: ({ browser }) => ({
-    name: 'ESPHome LVGL Studio',
-    description:
-      'Visueller LVGL-Dashboard-Editor für ESPHome mit KI-Agent (OpenRouter) und Auto-Debug-Loop.',
-    // Host-Permissions erlauben direkten Zugriff (ohne CORS) auf ESPHome device-builder
-    // und Home Assistant – beliebige Hosts/Ports, vom Nutzer in den Einstellungen gesetzt.
-    //
+    // Name/Beschreibung aus src/public/_locales (en = Standard, de) – Stores zeigen sie je Sprache.
+    name: '__MSG_extName__',
+    description: '__MSG_extDescription__',
+    default_locale: 'en',
     // Den Origin des WS-Handshakes muss die Extension anpassen, sonst lehnt der device-builder
     // ihn per Cross-Origin-Gate mit 403 ab. Die Wege dafür sind pro Browser verschieden:
     //   Firefox (MV2): webRequest + webRequestBlocking schreiben den Header um (background.ts)
@@ -35,7 +33,6 @@ export default defineConfig({
     //                  dem ESPHome-Host den Socket (`scripting`, siehe core/esphome/relay.ts).
     permissions: [
       'storage',
-      'tabs',
       ...(browser === 'chrome'
         ? ['sidePanel', 'scripting']
         : ['webRequest', 'webRequestBlocking']),
@@ -61,12 +58,17 @@ export default defineConfig({
       browser_specific_settings: {
         gecko: {
           id: 'esphome-lvgl-studio@benni.local',
-          strict_min_version: '109.0',
+          // 140: erste Version mit data_collection_permissions (AMO-Pflichtfeld).
+          strict_min_version: '140.0',
           data_collection_permissions: {
-            required: ["none"]
-          }
-        }
-      }
+            required: ['none'],
+          },
+        },
+        // Android kennt data_collection_permissions erst ab 142.
+        gecko_android: {
+          strict_min_version: '142.0',
+        },
+      },
     })
   }),
 });

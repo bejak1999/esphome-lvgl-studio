@@ -186,6 +186,38 @@ lvgl:
     expect(screen.height).toBe(240);
   });
 
+  it('kennt Displaymodelle ohne Auflösung im Namen (Guition JC1060P470 → 1024×600)', () => {
+    const { screen } = yamlToScreen(`
+display:
+  - platform: mipi_dsi
+    model: JC1060P470
+lvgl:
+  pages:
+    - id: main
+      widgets:
+        - obj:
+            width: 100%
+            height: 40
+`);
+    expect(screen.width).toBe(1024);
+    expect(screen.height).toBe(600);
+  });
+
+  it('Modelltabelle respektiert rotation (ili9341, 90° → 320×240)', () => {
+    const { screen } = yamlToScreen(`
+display:
+  - platform: ili9xxx
+    model: ILI9341
+    rotation: 90
+lvgl:
+  pages:
+    - id: main
+      widgets: []
+`);
+    expect(screen.width).toBe(320);
+    expect(screen.height).toBe(240);
+  });
+
   it('leitet die Größe aus der Widget-Ausdehnung ab, wenn kein display definiert ist', () => {
     const yaml = `
 lvgl:

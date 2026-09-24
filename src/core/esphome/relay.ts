@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import type { WebSocketLike, WsFactory } from './client';
+import { tr } from '@/shared/i18n';
 
 /**
  * Chrome: WebSocket-Relay über einen unsichtbaren iframe auf dem ESPHome-Host.
@@ -34,7 +35,7 @@ interface ScriptingApi {
 /** Registriert das Relay-Script für genau diesen Host (idempotent, auch bei parallelen Seiten). */
 async function ensureRelayScript(origin: string): Promise<void> {
   const scripting = (browser as unknown as { scripting?: ScriptingApi }).scripting;
-  if (!scripting) throw new Error('scripting-API nicht verfügbar');
+  if (!scripting) throw new Error(tr('err_relay'));
   const def = {
     id: SCRIPT_ID,
     // Ports sind in Chrome-Match-Patterns erlaubt; der Pfad beschränkt das Script auf den iframe.

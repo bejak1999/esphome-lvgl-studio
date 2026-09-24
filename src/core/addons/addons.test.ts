@@ -346,8 +346,8 @@ describe('validateManifest', () => {
 
   it('meldet fehlende Pflichtangaben verständlich', () => {
     const errs = validateManifest({ name: 'X' });
-    expect(errs.some((e) => e.includes("'id' fehlt"))).toBe(true);
-    expect(errs.some((e) => e.includes("'version' fehlt"))).toBe(true);
+    expect(errs.some((e) => e.includes("'id' is missing"))).toBe(true);
+    expect(errs.some((e) => e.includes("'version' is missing"))).toBe(true);
     expect(errs.some((e) => e.includes("'widgets'"))).toBe(true);
   });
 
@@ -362,9 +362,9 @@ describe('validateManifest', () => {
       ],
       widgets: [{ key: 'w', type: 'gibtsnicht' }],
     });
-    expect(errs.some((e) => e.includes('unbekannte'))).toBe(true);
-    expect(errs.some((e) => e.includes('doppelt'))).toBe(true);
-    expect(errs.some((e) => e.includes('unbekannter Widget-Typ'))).toBe(true);
+    expect(errs.some((e) => e.includes('unknown'))).toBe(true);
+    expect(errs.some((e) => e.includes('duplicated'))).toBe(true);
+    expect(errs.some((e) => e.includes('unknown widget type'))).toBe(true);
   });
 
   it('warnt bei yaml-ids ohne addon_-Präfix', () => {
@@ -376,7 +376,7 @@ describe('validateManifest', () => {
       widgets: [{ key: 'w', type: 'label' }],
       yaml: 'sensor:\n  - platform: template\n    id: meins\n',
     });
-    expect(errs.every((e) => e.startsWith('Hinweis:'))).toBe(true);
+    expect(errs.every((e) => e.startsWith('ⓘ '))).toBe(true);
   });
 });
 

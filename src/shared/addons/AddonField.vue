@@ -11,6 +11,8 @@ import type { TemplateContext } from '@/core/addons/template';
 import MapPicker from './MapPicker.vue';
 import type { MapValue } from './MapPicker.vue';
 import RemoteSelect from './RemoteSelect.vue';
+import { useI18n } from '@/shared/i18n';
+const { t } = useI18n();
 
 const props = defineProps<{
   spec: FieldSpec;
@@ -79,7 +81,7 @@ function setSize(patch: { width?: number; height?: number }) {
       v-else-if="spec.kind === 'ha-entity'"
       :value="str"
       list="ha-entities"
-      placeholder="sensor.wohnzimmer_temperatur"
+      :placeholder="t('addon_entity_placeholder')"
       class="addon-input"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />

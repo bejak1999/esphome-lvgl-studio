@@ -7,6 +7,7 @@ import {
 } from './mapping';
 
 import { espColorToHex, hexToEspInt } from './colors';
+import { tr } from '@/shared/i18n';
 
 /** Die Indicator-Füllfarbe wird über das `color`-Prop gemappt, nicht über indicator_bg_color. */
 const INDICATOR_SKIP = new Set(['bg_color']);
@@ -1936,9 +1937,37 @@ function parseDisplayNative(disp: YAMLMap | null): { w: number; h: number } | nu
   if (typeof model === 'string') {
     const p = parseWxH(model);
     if (p) return p;
+    const known = KNOWN_PANELS[model.trim().toUpperCase().replace(/[\s_]+/g, '-')];
+    if (known) return known;
   }
   return null;
 }
+
+/**
+ * Native Auflösung (Hochformat wie im Treiber, vor `rotation`) bekannter ESPHome-Displaymodelle,
+ * deren Name keine Auflösung enthält. Ohne diese Tabelle fällt die Erkennung auf die
+ * Widget-Ausdehnung zurück – bei Prozent-Größen (`width: 100%`) ergibt das Unsinn.
+ */
+const KNOWN_PANELS: Record<string, { w: number; h: number }> = {
+  // mipi_dsi (ESP32-P4)
+  JC1060P470: { w: 1024, h: 600 },
+  JC4880P443: { w: 480, h: 800 },
+  'M5STACK-TAB5': { w: 720, h: 1280 },
+  // ili9xxx / mipi_spi – gängige Controller
+  ILI9341: { w: 240, h: 320 },
+  ILI9342: { w: 320, h: 240 },
+  ILI9481: { w: 320, h: 480 },
+  ILI9486: { w: 320, h: 480 },
+  ILI9488: { w: 320, h: 480 },
+  'ILI9488-A': { w: 320, h: 480 },
+  ST7796: { w: 320, h: 480 },
+  ST7789V: { w: 240, h: 320 },
+  ST7735: { w: 128, h: 160 },
+  GC9A01A: { w: 240, h: 240 },
+  M5CORE: { w: 320, h: 240 },
+  S3BOX: { w: 320, h: 240 },
+  'S3BOX-LITE': { w: 320, h: 240 },
+};
 
 /**
  * Bestimmt die Canvas-Größe: native Display-Auflösung (aus dimensions/model), gedreht per
@@ -2285,7 +2314,7 @@ export function yamlToScreens(text: string): { pages: Screen[]; yaml: string } {
     const bg = pageMap?.get('bg_color');
     pages.push({
       id: pageId != null ? String(pageId) : i === 0 ? 'main_page' : `page_${i + 1}`,
-      name: pageId != null ? String(pageId) : `Seite ${i + 1}`,
+      name: pageId != null ? String(pageId) : tr('page_default', { n: i + 1 }),
       width: 0, // wird unten gesetzt (Displaygröße gilt für alle Seiten)
       height: 0,
       bg_color: bg != null ? espColorToHex(bg) : '#111827',

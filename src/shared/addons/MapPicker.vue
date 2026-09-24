@@ -15,6 +15,8 @@ import {
   tileYToLat,
   wrapLon,
 } from '@/core/addons/geo';
+import { useI18n } from '@/shared/i18n';
+const { t } = useI18n();
 
 export interface MapValue {
   lat: number;
@@ -245,7 +247,7 @@ async function doSearch() {
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     const list = (await res.json()) as { lat: string; lon: string }[];
     if (!list.length) {
-      searchError.value = 'Kein Treffer';
+      searchError.value = t('map_no_hit');
       return;
     }
     const lat = Number(list[0].lat);
@@ -266,13 +268,13 @@ async function doSearch() {
     <div class="flex gap-1.5">
       <input
         v-model="search"
-        placeholder="Ort suchen (Enter)…"
+        :placeholder="t('map_search')"
         class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
         @keydown.enter.prevent="doSearch"
       />
       <button
         class="rounded-lg border border-white/10 px-2 py-1 text-[11px] text-gray-300 hover:bg-white/5"
-        title="Ansicht auf den gewählten Punkt zentrieren"
+        :title="t('map_center')" :aria-label="t('map_center')"
         @click="centerOnPoint"
       >
         ⌖
@@ -282,7 +284,7 @@ async function doSearch() {
       <button class="rounded-lg border border-white/10 px-2 py-1 text-[11px] text-gray-300 hover:bg-white/5" @click="setZoom(zoom + 1)">+</button>
     </div>
     <p v-if="searchError" class="text-[10px] text-amber-400">{{ searchError }}</p>
-    <p v-else-if="searching" class="text-[10px] text-gray-500">sucht…</p>
+    <p v-else-if="searching" class="text-[10px] text-gray-500">{{ t('map_searching') }}</p>
 
     <div
       ref="box"
@@ -326,12 +328,12 @@ async function doSearch() {
         v-if="tilesBlocked"
         class="pointer-events-none absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] text-amber-300"
       >
-        Kacheln nicht ladbar – Koordinaten unten eintragen
+        {{ t('map_tiles_failed') }}
       </div>
     </div>
 
     <div class="flex items-center gap-2">
-      <label class="text-[10px] text-gray-500">Breite</label>
+      <label class="text-[10px] text-gray-500">{{ t('map_span') }}</label>
       <input
         type="range"
         :min="spanKm?.min ?? 2"

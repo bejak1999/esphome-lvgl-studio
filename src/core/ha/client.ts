@@ -6,6 +6,8 @@
  * Die Extension umgeht CORS zur HA-Instanz per Host-Permissions.
  */
 
+import { tr } from '@/shared/i18n';
+
 export interface HaEntity {
   entity_id: string;
   /** Domain-Teil, z. B. 'light', 'sensor'. */
@@ -24,8 +26,10 @@ interface RawState {
 
 type FetchLike = (
   url: string,
-  init?: { headers?: Record<string, string> },
+  init?: { headers?: Record<string, string>; signal?: AbortSignal },
 ) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>;
+
+const HA_TIMEOUT_MS = 8000;
 
 export async function fetchEntities(
   baseUrl: string,
@@ -33,10 +37,17 @@ export async function fetchEntities(
   fetchImpl: FetchLike = fetch,
 ): Promise<HaEntity[]> {
   const url = baseUrl.replace(/\/+$/, '') + '/api/states';
-  const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${token}` } });
+  // Ohne Timeout hängt die UI bei nicht erreichbarem Host bis zum TCP-Timeout des Systems (~20 s+).
+  const res = await fetchImpl(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(HA_TIMEOUT_MS),
+  }).catch((e: unknown) => {
+    if ((e as Error)?.name === 'TimeoutError') throw new Error(tr('err_ha_timeout', { url: baseUrl }));
+    throw e;
+  });
   if (!res.ok) throw new Error(`HA ${url} → HTTP ${res.status}`);
   const data = (await res.json()) as RawState[];
-  if (!Array.isArray(data)) throw new Error('Unerwartete HA-Antwort (kein Array)');
+  if (!Array.isArray(data)) throw new Error(tr('err_ha_unexpected'));
   return data
     .map((s) => ({
       entity_id: s.entity_id,

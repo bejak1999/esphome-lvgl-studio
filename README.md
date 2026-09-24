@@ -63,7 +63,7 @@ Equipped with an **Autonomous AI Agent** (powered by OpenRouter LLMs like Claude
 
 | Browser | Store | Status |
 | --- | --- | --- |
-| Firefox (≥ 109) | Firefox Add-ons (AMO) | coming soon |
+| Firefox (≥ 140) | Firefox Add-ons (AMO) | coming soon |
 | Chrome / Edge / Brave | Chrome Web Store | coming soon |
 
 Until the store listings are live, use the manual installation below.

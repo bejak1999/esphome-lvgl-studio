@@ -99,7 +99,7 @@ function removeInstance() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6" @click.self="emit('close')">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6" v-dialog="() => emit('close')" @click.self="emit('close')">
     <div class="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
       <header class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
         <div class="flex min-w-0 items-center gap-2">
@@ -111,7 +111,7 @@ function removeInstance() {
             </p>
           </div>
         </div>
-        <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" @click="emit('close')">✕</button>
+        <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" :title="t('common_close')" :aria-label="t('common_close')" @click="emit('close')">✕</button>
       </header>
 
       <div v-if="!manifest" class="p-6 text-[12px] text-amber-400">
@@ -165,7 +165,7 @@ function removeInstance() {
         </div>
 
         <!-- Vorschau + Info -->
-        <aside class="min-w-0 space-y-2">
+        <section class="min-w-0 space-y-2">
           <div v-if="manifest.preview">
             <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('addon_config_preview') }}</p>
             <div class="flex min-h-24 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[#111827] p-1">
@@ -194,7 +194,7 @@ function removeInstance() {
             <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('addon_config_additional_yaml') }}</p>
             <pre class="overflow-x-auto rounded-lg border border-white/10 bg-[#111827] p-2 text-[10px] text-gray-400">{{ summary.yaml }}</pre>
           </div>
-        </aside>
+        </section>
       </div>
 
       <footer v-if="manifest" class="flex items-center justify-between gap-2 border-t border-white/10 px-4 py-3">

@@ -40,6 +40,8 @@ const displayNodes = computed(() =>
 
 <template>
   <div
+    aria-hidden="true"
+    data-lvgl-canvas
     class="pointer-events-none flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10"
     :style="{ width: box + 'px', height: box + 'px', background: bg }"
   >

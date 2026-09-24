@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import WidgetView from '@/core/lvgl/WidgetView.vue';
 import { useDocumentStore } from '@/core/lvgl/document';
 import {
@@ -8,6 +8,8 @@ import {
 } from '@/core/ha/store';
 import { useSettingsStore } from '@/shared/settings';
 import type { WidgetNode, WidgetType } from '@/core/lvgl/types';
+import { useI18n } from '@/shared/i18n';
+const { t } = useI18n();
 
 const props = defineProps<{ preview?: boolean }>();
 const doc = useDocumentStore();
@@ -44,6 +46,35 @@ onBeforeUnmount(() => clearInterval(pollTimer));
 
 const zoom = ref(1);
 const stageRef = ref<HTMLElement | null>(null);
+const viewportRef = ref<HTMLElement | null>(null);
+
+/**
+ * Zoom so wählen, dass das ganze Display sichtbar ist (max. 100 %). Automatisch beim Öffnen
+ * und bei neuer Displaygröße – große Panels (z. B. 1024×600) passen sonst nicht auf den Schirm.
+ */
+/** true, solange der Nutzer nicht selbst zoomt – dann folgt der Zoom der Fenstergröße. */
+const autoFit = ref(true);
+
+async function fitZoom() {
+  autoFit.value = true;
+  await nextTick();
+  const vp = viewportRef.value;
+  if (!vp || !doc.screen.width || !doc.screen.height) return;
+  const pad = 64; // p-8 links+rechts bzw. oben+unten
+  const z = Math.min(1, (vp.clientWidth - pad) / doc.screen.width, (vp.clientHeight - pad) / doc.screen.height);
+  zoom.value = Math.max(0.1, Math.floor(z * 20) / 20);
+}
+let resizeObs: ResizeObserver | null = null;
+onMounted(() => {
+  fitZoom();
+  // Moduswechsel (Split/Code), Fenstergröße: neu einpassen, außer der Nutzer hat gezoomt.
+  resizeObs = new ResizeObserver(() => {
+    if (autoFit.value) fitZoom();
+  });
+  if (viewportRef.value) resizeObs.observe(viewportRef.value);
+});
+onBeforeUnmount(() => resizeObs?.disconnect());
+watch(() => [doc.screen.width, doc.screen.height], fitZoom);
 
 // Snap & Ausrichtungshilfen
 const snap = ref(true);
@@ -421,6 +452,7 @@ function onStageClick() {
 }
 
 function setZoom(z: number) {
+  autoFit.value = false;
   zoom.value = Math.max(0.25, Math.min(3, Math.round(z * 100) / 100));
 }
 </script>
@@ -432,23 +464,31 @@ function setZoom(z: number) {
       v-if="!preview"
       class="absolute left-3 top-3 z-10 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#0e1626]/90 p-0.5 text-[11px]"
     >
-      <button class="rounded px-2 py-1" :class="snap ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" title="An Kanten/Raster einrasten" @click="snap = !snap">Snap</button>
-      <button class="rounded px-2 py-1" :class="showGrid ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" title="Raster anzeigen" @click="showGrid = !showGrid">Raster</button>
+      <button class="rounded px-2 py-1" :class="snap ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_snap_title')" @click="snap = !snap">{{ t('canvas_snap') }}</button>
+      <button class="rounded px-2 py-1" :class="showGrid ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_grid_title')" @click="showGrid = !showGrid">{{ t('canvas_grid') }}</button>
       <button
         v-if="ha.entities.length"
         class="rounded px-2 py-1"
         :class="reflect ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'"
-        title="Vorschau: gebundene Widgets zeigen den aktuellen HA-Status (an/aus). Nur Anzeige-Hilfe im Editor."
+        :title="t('canvas_live_title')"
         @click="reflect = !reflect"
       >
-        Live-Status
+        {{ t('canvas_live') }}
       </button>
     </div>
 
     <!-- Canvas-Fläche -->
-    <div class="flex min-h-0 flex-1 items-center justify-center overflow-auto p-8">
+    <!-- m-auto statt justify/items-center: zentriert, bleibt aber scrollbar, wenn das Display
+         größer als die Fläche ist (sonst wäre der linke/obere Rand unerreichbar). Der Sizer hat
+         die gezoomte Größe, damit die Scrollbalken stimmen. -->
+    <div ref="viewportRef" class="flex min-h-0 flex-1 overflow-auto p-8" tabindex="0" role="region" :aria-label="t('canvas_area_label')">
+      <div
+        class="m-auto shrink-0"
+        :style="{ width: doc.screen.width * zoom + 'px', height: doc.screen.height * zoom + 'px' }"
+      >
       <div
         ref="stageRef"
+        data-lvgl-canvas
         class="relative shrink-0 overflow-hidden shadow-2xl"
         :class="preview ? '' : 'select-none ring-1 ring-white/10'"
         :style="{
@@ -456,7 +496,7 @@ function setZoom(z: number) {
           height: doc.screen.height + 'px',
           backgroundColor: doc.screen.bg_color,
           transform: `scale(${zoom})`,
-          transformOrigin: 'center center',
+          transformOrigin: 'top left',
           borderRadius: '12px',
         }"
         @click.self="onStageClick"
@@ -500,8 +540,9 @@ function setZoom(z: number) {
           v-if="!doc.screen.children.length"
           class="pointer-events-none absolute inset-0 flex items-center justify-center text-center text-xs text-gray-600"
         >
-          Widgets aus der Palette hierher ziehen<br />oder anklicken zum Hinzufügen.
+          {{ t('canvas_empty') }}<br />{{ t('canvas_empty2') }}
         </div>
+      </div>
       </div>
     </div>
 
@@ -512,10 +553,11 @@ function setZoom(z: number) {
     >
       <span>{{ doc.screen.width }} × {{ doc.screen.height }}</span>
       <span class="mx-1 text-white/20">|</span>
-      <button class="rounded px-1.5 hover:bg-white/10" @click="setZoom(zoom - 0.25)">−</button>
+      <button class="rounded px-1.5 hover:bg-white/10" :aria-label="t('canvas_zoom_out')" :title="t('canvas_zoom_out')" @click="setZoom(zoom - 0.25)">−</button>
       <span class="w-10 text-center">{{ Math.round(zoom * 100) }}%</span>
-      <button class="rounded px-1.5 hover:bg-white/10" @click="setZoom(zoom + 0.25)">＋</button>
-      <button class="rounded px-1.5 hover:bg-white/10" @click="setZoom(1)">Reset</button>
+      <button class="rounded px-1.5 hover:bg-white/10" :aria-label="t('canvas_zoom_in')" :title="t('canvas_zoom_in')" @click="setZoom(zoom + 0.25)">＋</button>
+      <button class="rounded px-1.5 hover:bg-white/10" :title="t('canvas_zoom_fit_title')" @click="fitZoom">{{ t('canvas_zoom_fit') }}</button>
+      <button class="rounded px-1.5 hover:bg-white/10" :title="t('canvas_zoom_reset_title')" @click="setZoom(1)">{{ t('canvas_zoom_reset') }}</button>
     </div>
   </div>
 </template>

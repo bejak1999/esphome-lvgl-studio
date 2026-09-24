@@ -73,6 +73,7 @@ function onBlur() {
       ref="area"
       :value="buffer"
       spellcheck="false"
+      aria-label="ESPHome YAML"
       class="min-h-0 flex-1 resize-none py-3 pl-2 pr-3 text-gray-300 focus:outline-none"
       @input="onInput"
       @scroll="onScroll"

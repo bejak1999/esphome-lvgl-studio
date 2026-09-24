@@ -21,6 +21,7 @@ import { ADDON_API_VERSION, ADDON_ID_PREFIX, ADDON_ROOT_KEY } from './types';
 import { calc, getPath, render, renderNumber, renderValue } from './template';
 import type { TemplateContext } from './template';
 import { computeBBox, formatBBoxSWNE, formatBBoxWSEN } from './geo';
+import { tr } from '@/shared/i18n';
 
 /**
  * Tiefe Kopie eines Werts aus dem Manifest.
@@ -267,26 +268,26 @@ const OUTPUT_KINDS = new Set(['template', 'calc', 'switch', 'bbox']);
 function validateFields(fields: unknown, where: string, errors: string[]): void {
   if (fields === undefined) return;
   if (!Array.isArray(fields)) {
-    errors.push(`${where}: muss eine Liste sein`);
+    errors.push(tr('mf_must_list', { at: where }));
     return;
   }
   const keys = new Set<string>();
   fields.forEach((f, i) => {
     const at = `${where}[${i}]`;
     if (!f || typeof f !== 'object') {
-      errors.push(`${at}: muss ein Objekt sein`);
+      errors.push(tr('mf_must_object', { at }));
       return;
     }
     const spec = f as Partial<FieldSpec>;
-    if (!spec.key) errors.push(`${at}: 'key' fehlt`);
-    else if (keys.has(spec.key)) errors.push(`${at}: 'key' "${spec.key}" ist doppelt`);
+    if (!spec.key) errors.push(tr('mf_key_missing', { at }));
+    else if (keys.has(spec.key)) errors.push(tr('mf_key_dup', { at, key: spec.key }));
     else keys.add(spec.key);
-    if (!spec.label) errors.push(`${at}: 'label' fehlt`);
+    if (!spec.label) errors.push(tr('mf_label_missing', { at }));
     if (!spec.kind || !FIELD_KINDS.has(spec.kind)) {
-      errors.push(`${at}: unbekannte 'kind' "${String(spec.kind)}" (erlaubt: ${[...FIELD_KINDS].join(', ')})`);
+      errors.push(tr('mf_unknown_kind', { at, kind: String(spec.kind), allowed: [...FIELD_KINDS].join(', ') }));
     }
-    if (spec.kind === 'select' && !spec.options?.length) errors.push(`${at}: 'select' braucht 'options'`);
-    if (spec.kind === 'remote-select' && !spec.url) errors.push(`${at}: 'remote-select' braucht 'url'`);
+    if (spec.kind === 'select' && !spec.options?.length) errors.push(tr('mf_select_options', { at }));
+    if (spec.kind === 'remote-select' && !spec.url) errors.push(tr('mf_remote_url', { at }));
   });
 }
 
@@ -295,56 +296,59 @@ function validateFields(fields: unknown, where: string, errors: string[]): void 
  * Zusätzlich werden Hinweise (`Hinweis:`) für Konventionsverstöße ausgegeben, die die
  * Installation nicht verhindern.
  */
+/** Sprachneutrales Präfix für Hinweise, die die Installation nicht verhindern. */
+export const HINT = 'ⓘ ';
+
 export function validateManifest(input: unknown): string[] {
   const errors: string[] = [];
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    return ['Manifest ist kein JSON-Objekt'];
+    return [tr('mf_not_object')];
   }
   const m = input as Partial<AddonManifest>;
 
-  if (!m.id) errors.push("'id' fehlt");
+  if (!m.id) errors.push(tr('mf_id_missing'));
   else if (!/^[a-z0-9][a-z0-9._-]{2,63}$/.test(m.id)) {
-    errors.push("'id' darf nur Kleinbuchstaben, Ziffern, '.', '-' und '_' enthalten (3–64 Zeichen)");
+    errors.push(tr('mf_id_pattern'));
   }
-  if (!m.name) errors.push("'name' fehlt");
-  if (!m.version) errors.push("'version' fehlt");
+  if (!m.name) errors.push(tr('mf_name_missing'));
+  if (!m.version) errors.push(tr('mf_version_missing'));
   if (m.api != null && m.api !== ADDON_API_VERSION) {
-    errors.push(`'api' ${m.api} wird nicht unterstützt (erwartet: ${ADDON_API_VERSION})`);
+    errors.push(tr('mf_api', { api: String(m.api), expected: ADDON_API_VERSION }));
   }
 
   validateFields(m.fields, 'fields', errors);
   validateFields(m.settings, 'settings', errors);
 
   if (m.outputs !== undefined) {
-    if (!Array.isArray(m.outputs)) errors.push("'outputs': muss eine Liste sein");
+    if (!Array.isArray(m.outputs)) errors.push(tr('mf_must_list', { at: "'outputs'" }));
     else {
       m.outputs.forEach((o, i) => {
         const at = `outputs[${i}]`;
-        if (!o || typeof o !== 'object') return errors.push(`${at}: muss ein Objekt sein`);
+        if (!o || typeof o !== 'object') return errors.push(tr('mf_must_object', { at }));
         const spec = o as Partial<OutputSpec> & { kind?: string };
-        if (!spec.key) errors.push(`${at}: 'key' fehlt`);
+        if (!spec.key) errors.push(tr('mf_key_missing', { at }));
         if (!spec.kind || !OUTPUT_KINDS.has(spec.kind)) {
-          errors.push(`${at}: unbekannte 'kind' "${String(spec.kind)}" (erlaubt: ${[...OUTPUT_KINDS].join(', ')})`);
+          errors.push(tr('mf_unknown_kind', { at, kind: String(spec.kind), allowed: [...OUTPUT_KINDS].join(', ') }));
         }
       });
     }
   }
 
   if (!Array.isArray(m.widgets) || m.widgets.length === 0) {
-    errors.push("'widgets': mindestens ein Widget wird erwartet");
+    errors.push(tr('mf_widgets_min'));
   } else {
     const keys = new Set<string>();
     const walk = (list: WidgetSpec[], path: string) => {
       list.forEach((w, i) => {
         const at = `${path}[${i}]`;
-        if (!w || typeof w !== 'object') return errors.push(`${at}: muss ein Objekt sein`);
-        if (!w.key) errors.push(`${at}: 'key' fehlt`);
+        if (!w || typeof w !== 'object') return errors.push(tr('mf_must_object', { at }));
+        if (!w.key) errors.push(tr('mf_key_missing', { at }));
         else if (w.key === ADDON_ROOT_KEY) {
-          errors.push(`${at}: 'key' "${ADDON_ROOT_KEY}" ist reserviert (automatischer Gruppen-Container)`);
-        } else if (keys.has(w.key)) errors.push(`${at}: 'key' "${w.key}" ist doppelt`);
+          errors.push(tr('mf_key_reserved', { at, key: ADDON_ROOT_KEY }));
+        } else if (keys.has(w.key)) errors.push(tr('mf_key_dup', { at, key: w.key }));
         else keys.add(w.key);
         if (!w.type || !CATALOG_BY_TYPE[w.type as WidgetType]) {
-          errors.push(`${at}: unbekannter Widget-Typ "${String(w.type)}"`);
+          errors.push(tr('mf_widget_type', { at, type: String(w.type) }));
         }
         if (w.children?.length) walk(w.children, `${at}.children`);
       });
@@ -352,15 +356,12 @@ export function validateManifest(input: unknown): string[] {
     walk(m.widgets, 'widgets');
   }
 
-  if (m.yaml !== undefined && typeof m.yaml !== 'string') errors.push("'yaml': muss ein String sein");
+  if (m.yaml !== undefined && typeof m.yaml !== 'string') errors.push(tr('mf_yaml_string'));
   if (typeof m.yaml === 'string' && m.yaml.includes('id:') && !m.yaml.includes(ADDON_ID_PREFIX)) {
-    errors.push(
-      `Hinweis: ids im 'yaml'-Fragment sollten mit '${ADDON_ID_PREFIX}' beginnen ` +
-        '(z. B. `id: addon_{{ iid }}_sensor`), sonst können sie beim Entfernen des Addons nicht aufgeräumt werden.',
-    );
+    errors.push(HINT + tr('mf_yaml_ids', { prefix: ADDON_ID_PREFIX }));
   }
   if (m.preview && (m.preview as { kind?: string }).kind !== 'image') {
-    errors.push("'preview.kind': nur 'image' wird unterstützt");
+    errors.push(tr('mf_preview_kind'));
   }
 
   return errors;
@@ -368,5 +369,5 @@ export function validateManifest(input: unknown): string[] {
 
 /** True, wenn nur Hinweise (keine echten Fehler) vorliegen. */
 export function onlyHints(errors: string[]): boolean {
-  return errors.every((e) => e.startsWith('Hinweis:'));
+  return errors.every((e) => e.startsWith(HINT));
 }

@@ -1,0 +1,4 @@
+{
+  "extName": { "message": "ESPHome LVGL Studio" },
+  "extDescription": { "message": "Visueller LVGL-Dashboard-Editor für ESPHome mit KI-Agent (OpenRouter) und Auto-Debug-Loop." }
+}

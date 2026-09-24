@@ -8,7 +8,7 @@ import { useI18n } from '@/shared/i18n';
 const versions = useVersionStore();
 const doc = useDocumentStore();
 const emit = defineEmits<{ close: [] }>();
-const { t } = useI18n();
+const { t, lang } = useI18n();
 
 const selectedId = ref<string | null>(null);
 const confirmingId = ref<string | null>(null);
@@ -21,11 +21,11 @@ const selected = computed<CodeVersion | null>(() =>
 const diff = computed(() => (selected.value ? diffLines(doc.exportedYaml, selected.value.yaml) : null));
 
 function fmt(at: number): string {
-  return new Date(at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'medium' });
+  return new Date(at).toLocaleString(lang.value === 'de' ? 'de-DE' : 'en-GB', { dateStyle: 'short', timeStyle: 'medium' });
 }
 
 async function snapshotNow() {
-  await versions.snapshot(doc.exportedYaml, 'manuell');
+  await versions.snapshot(doc.exportedYaml, t('hist_manual'));
 }
 
 function restore(v: CodeVersion) {
@@ -37,18 +37,18 @@ function restore(v: CodeVersion) {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" @click.self="emit('close')">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" v-dialog="() => emit('close')" @click.self="emit('close')">
     <div class="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
       <header class="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold text-white">{{ t('hist_title') }}</span>
+          <h2 class="text-sm font-semibold text-white">{{ t('hist_title') }}</h2>
           <span class="text-[11px] text-gray-500">{{ versions.device || '—' }}</span>
         </div>
         <div class="flex items-center gap-2">
           <button class="rounded-lg border border-white/10 px-2.5 py-1 text-[11px] text-gray-300 hover:bg-white/5" @click="snapshotNow">
             {{ t('hist_snapshot_now') }}
           </button>
-          <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" @click="emit('close')">✕</button>
+          <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" :title="t('common_close')" :aria-label="t('common_close')" @click="emit('close')">✕</button>
         </div>
       </header>
 

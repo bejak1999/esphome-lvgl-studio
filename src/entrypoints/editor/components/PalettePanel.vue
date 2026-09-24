@@ -28,7 +28,7 @@ function onDragStart(ev: DragEvent, type: WidgetType) {
 
 <template>
   <!-- Breite/Rahmen kommen von der linken Spalte im Editor (darunter sitzt das Addon-Panel). -->
-  <aside class="flex min-h-0 flex-1 flex-col bg-[#0e1626]">
+  <aside :aria-label="t('editor_palette_label')" class="flex min-h-0 flex-1 flex-col bg-[#0e1626]">
     <div class="border-b border-white/10 px-3 py-2">
       <h2 class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('palette_widgets') }}</h2>
     </div>

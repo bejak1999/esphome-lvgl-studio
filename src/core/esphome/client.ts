@@ -20,6 +20,8 @@
  * Auth wird In-Band-Auth versucht; im typischen LAN-Standalone-Betrieb ist Auth aus.
  */
 
+import { tr } from '@/shared/i18n';
+
 export interface ServerInfo {
   server_version?: string;
   esphome_version?: string;
@@ -117,7 +119,7 @@ export class DeviceBuilderClient {
       const timer = setTimeout(() => {
         if (!settled) {
           settled = true;
-          reject(new Error(`Timeout beim Verbinden mit ${url}`));
+          reject(new Error(tr('err_ws_timeout', { url })));
           ws.close();
         }
       }, timeoutMs);
@@ -139,11 +141,11 @@ export class DeviceBuilderClient {
         if (!settled) {
           settled = true;
           clearTimeout(timer);
-          reject(new Error(`WebSocket-Fehler bei ${url}`));
+          reject(new Error(tr('err_ws_error', { url })));
         }
       };
       ws.onclose = () => {
-        for (const p of this.pending.values()) p.reject(new Error('Verbindung geschlossen'));
+        for (const p of this.pending.values()) p.reject(new Error(tr('err_conn_closed')));
         this.pending.clear();
         this.eventSubs.clear();
       };
@@ -179,7 +181,7 @@ export class DeviceBuilderClient {
   /** Sendet ein Command und wartet auf die ResultMessage. */
   send<T = unknown>(command: string, args: Record<string, unknown> = {}): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      if (!this.ws) return reject(new Error('Nicht verbunden'));
+      if (!this.ws) return reject(new Error(tr('err_not_connected')));
       const message_id = this.nextId();
       this.pending.set(message_id, { resolve: resolve as (v: unknown) => void, reject });
       this.ws.send(JSON.stringify({ command, message_id, args }));
@@ -220,7 +222,7 @@ export class DeviceBuilderClient {
       this.send<{ id?: string; job_id?: string }>(command, args)
         .then((job) => {
           const jobId = String(job?.job_id ?? job?.id ?? '');
-          if (!jobId) return reject(new Error(`Kein Job-ID von ${command} erhalten`));
+          if (!jobId) return reject(new Error(tr('err_no_job_id', { cmd: command })));
 
           const timer = setTimeout(() => {
             sub.cancel();

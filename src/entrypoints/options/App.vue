@@ -14,7 +14,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl p-6 text-gray-200">
+  <main class="mx-auto max-w-3xl p-6 text-gray-200">
     <div class="mb-4 flex items-center gap-3">
       <img src="/icon/128.png" alt="ESPHome LVGL Studio" class="h-9 w-9 shrink-0" />
       <div>
@@ -40,5 +40,5 @@ onMounted(async () => {
         <AddonsSettings />
       </div>
     </div>
-  </div>
+  </main>
 </template>

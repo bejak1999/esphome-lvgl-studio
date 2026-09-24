@@ -68,6 +68,11 @@ function mergeWithDefaults(saved: Partial<Settings> | undefined): Settings {
 
 let liveSyncAdded = false;
 
+/** `<html lang>` passend zur UI-Sprache (Screenreader, Silbentrennung). */
+function applyDocumentLanguage(lang: string) {
+  if (typeof document !== 'undefined') document.documentElement.lang = lang;
+}
+
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
     settings: structuredClone(DEFAULT_SETTINGS),
@@ -79,6 +84,7 @@ export const useSettingsStore = defineStore('settings', {
       const res = await browser.storage.local.get(STORAGE_KEY);
       this.settings = mergeWithDefaults(res[STORAGE_KEY] as Partial<Settings> | undefined);
       this.loaded = true;
+      applyDocumentLanguage(this.settings.language);
 
       // Über Seitengrenzen hinweg synchron halten: Speichert z. B. die Options-Seite
       // einen neuen API-Key, aktualisiert sich die (bereits offene) Sidebar automatisch.
@@ -87,6 +93,7 @@ export const useSettingsStore = defineStore('settings', {
         browser.storage.onChanged.addListener((changes, area) => {
           if (area === 'local' && changes[STORAGE_KEY]) {
             this.settings = mergeWithDefaults(changes[STORAGE_KEY].newValue as Partial<Settings> | undefined);
+            applyDocumentLanguage(this.settings.language);
           }
         });
       }

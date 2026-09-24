@@ -3,6 +3,7 @@
  * Flashen läuft über esptool-js; die Logs liest ein eigener Reader direkt vom Port.
  */
 import { ESPLoader, Transport } from 'esptool-js';
+import { tr } from '@/shared/i18n';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -38,7 +39,7 @@ export function isPortCancelled(e: unknown): boolean {
  */
 export function requestSerialPort(): Promise<any> {
   if (!isWebSerialSupported()) {
-    return Promise.reject(new Error('Web Serial wird von diesem Browser nicht unterstützt.'));
+    return Promise.reject(new Error(tr('err_serial_unsupported')));
   }
   return (navigator as any).serial.requestPort();
 }

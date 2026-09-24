@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useDocumentStore } from '@/core/lvgl/document';
+import { pageLabel, useDocumentStore } from '@/core/lvgl/document';
 import { CATALOG_BY_TYPE } from '@/core/lvgl/catalog';
 import { NO_GRADIENT, NO_SHADOW, STYLEABLE_PARTS } from '@/core/yaml/mapping';
 import { PROP_FIELDS, UNIVERSAL_FIELD_KEYS } from '@/core/lvgl/fields';
 import type { WidgetNode, WidgetType } from '@/core/lvgl/types';
 import IconPicker from './IconPicker.vue';
 import { useI18n } from '@/shared/i18n';
+import { hasSelectOptions, partFieldLabel as partLabelFor, partGroupLabel, propLabel, selectOptions } from '@/core/lvgl/propLabels';
 
 const doc = useDocumentStore();
-const { t } = useI18n();
+const { t, lang } = useI18n();
 const showIconPicker = ref(false);
 
 /** Bei Text-tragenden Widgets (label/icon/button/checkbox) einen Icon-Picker anbieten. */
@@ -28,131 +29,16 @@ interface Field {
   kind: FieldKind;
 }
 
-// Auswahl-Felder (Dropdowns) mit ihren Optionen.
-const SELECT_OPTIONS: Record<string, { v: string; l: string }[]> = {
-  align: [
-    { v: '', l: '— (x/y absolut)' },
-    { v: 'top_left', l: 'Oben links' }, { v: 'top_mid', l: 'Oben mitte' }, { v: 'top_right', l: 'Oben rechts' },
-    { v: 'left_mid', l: 'Mitte links' }, { v: 'center', l: 'Zentriert' }, { v: 'right_mid', l: 'Mitte rechts' },
-    { v: 'bottom_left', l: 'Unten links' }, { v: 'bottom_mid', l: 'Unten mitte' }, { v: 'bottom_right', l: 'Unten rechts' },
-  ],
-  text_align: [{ v: '', l: '—' }, { v: 'left', l: 'Links' }, { v: 'center', l: 'Mitte' }, { v: 'right', l: 'Rechts' }],
-  text_decor: [{ v: '', l: '—' }, { v: 'NONE', l: 'Keine' }, { v: 'UNDERLINE', l: 'Unterstrichen' }, { v: 'STRIKETHROUGH', l: 'Durchgestrichen' }],
-  bg_grad_dir: [{ v: '', l: 'Kein Verlauf' }, { v: 'VER', l: 'Vertikal' }, { v: 'HOR', l: 'Horizontal' }],
-  scrollbar_mode: [
-    { v: '', l: 'Aus (Standard im Editor)' }, { v: 'AUTO', l: 'Automatisch' },
-    { v: 'ON', l: 'Immer' }, { v: 'ACTIVE', l: 'Beim Scrollen' }, { v: 'OFF', l: 'Nie' },
-  ],
-  img_source: [
-    { v: '', l: '— (Platzhalter)' },
-    { v: 'online', l: 'Online (URL, live)' },
-    { v: 'file', l: 'Datei / URL / mdi:' },
-    { v: 'ref', l: 'Vorhandenes Bild (id)' },
-  ],
-  // ESPHome kennt bei online_image nur diese vier Werte – „AUTO" gibt es nicht.
-  img_format: [{ v: 'PNG', l: 'PNG' }, { v: 'JPEG', l: 'JPEG' }, { v: 'JPG', l: 'JPG' }, { v: 'BMP', l: 'BMP' }],
-  img_type: [
-    { v: 'RGB565', l: 'RGB565 (Standard)' }, { v: 'RGB', l: 'RGB (24-bit)' },
-    { v: 'GRAYSCALE', l: 'Graustufen' }, { v: 'BINARY', l: 'Binär (1-bit)' },
-  ],
-  img_transparency: [
-    { v: '', l: 'Keine' }, { v: 'alpha_channel', l: 'Alpha-Kanal' }, { v: 'chroma_key', l: 'Chroma-Key' },
-  ],
-  grad_part: [{ v: '', l: 'Hintergrund' }, { v: 'indicator', l: 'Regler-Füllung' }],
-  long_mode: [
-    { v: '', l: '—' }, { v: 'WRAP', l: 'Umbrechen' }, { v: 'DOT', l: 'Kürzen (…)' },
-    { v: 'SCROLL', l: 'Scrollen' }, { v: 'SCROLL_CIRCULAR', l: 'Endlos scrollen' }, { v: 'CLIP', l: 'Abschneiden' },
-  ],
-};
-
-
-const LABELS: Record<string, string> = {
-  bg_color: 'Hintergrund',
-  bg_opa: 'Deckkraft %',
-  radius: 'Radius',
-  border_width: 'Rahmenbreite',
-  border_color: 'Rahmenfarbe',
-  text: 'Text',
-  text_color: 'Textfarbe',
-  font_size: 'Schriftgröße',
-  value: 'Wert',
-  min_value: 'Min',
-  max_value: 'Max',
-  color: 'Farbe',
-  checked: 'Aktiv',
-  options: 'Optionen',
-  arc_width: 'Bogenbreite',
-  opa: 'Widget-Deckkraft %',
-  hidden: 'Versteckt',
-  border_opa: 'Rahmen-Deckkraft %',
-  pad_all: 'Innenabstand',
-  shadow_color: 'Schatten-Farbe',
-  shadow_width: 'Schatten-Breite',
-  shadow_opa: 'Schatten-Deckkraft %',
-  shadow_spread: 'Schatten-Spread',
-  shadow_offset_x: 'Schatten X',
-  shadow_offset_y: 'Schatten Y',
-  outline_color: 'Kontur-Farbe',
-  outline_width: 'Kontur-Breite',
-  outline_opa: 'Kontur-Deckkraft %',
-  outline_pad: 'Kontur-Abstand',
-  bg_grad_color: 'Verlaufsfarbe',
-  bg_grad_dir: 'Verlaufsrichtung',
-  scrollbar_mode: 'Scrollbalken',
-  scrollable: 'Scrollen erlauben',
-  img_source: 'Bildquelle',
-  img_url: 'Bild-URL (live)',
-  img_file: 'Datei / URL / mdi:',
-  img_ref: 'Bild-id (vorhanden)',
-  img_format: 'Format',
-  img_type: 'Farbformat',
-  img_update_interval: 'Aktualisierung (z. B. 4s)',
-  img_resize: 'Skalieren (BxH, z. B. 480x320)',
-  img_transparency: 'Transparenz',
-  img_buffer_size: 'Download-Puffer (Byte, Standard 65536)',
-  knob_bg_color: 'Knopf-Farbe',
-  knob_radius: 'Knopf-Radius',
-  knob_pad_all: 'Knopf-Größe',
-  text_align: 'Textausrichtung',
-  text_opa: 'Text-Deckkraft %',
-  text_letter_spacing: 'Buchstabenabstand',
-  text_line_space: 'Zeilenabstand',
-  text_decor: 'Text-Dekoration',
-  decimals: 'Nachkommastellen (Live)',
-  grad_part: 'Verlauf auf',
-  align: 'Ausrichtung im Eltern',
-  brightness: 'Helligkeit %',
-  animated: 'Animiert',
-  selected_index: 'Ausgewählter Index',
-  placeholder_text: 'Platzhalter-Text',
-  max_length: 'Max. Länge',
-  one_line: 'Einzeilig',
-  password_mode: 'Passwort-Modus',
-  spin_time: 'Umlaufzeit (z. B. 1000ms)',
-  arc_length: 'Bogenlänge (z. B. 60deg)',
-  line_width: 'Linienbreite',
-  line_rounded: 'Linie abgerundet',
-  arc_rounded: 'Enden abgerundet',
-  points: 'Punkte (x,y x,y …)',
-  size: 'Größe (px)',
-  light_color: 'Helle Farbe',
-  dark_color: 'Dunkle Farbe',
-  long_mode: 'Langer Text',
-  recolor: 'Farbcodes im Text (#RRGGBB)',
-  src: 'Bild-ID',
-  checkable: 'Toggle-Modus (an/aus)',
-  adjustable: 'Bedienbar (zeigt den Griff)',
-  checked_bg_color: 'Farbe im An-Zustand',
-  checked_bg_opa: 'Deckkraft im An-Zustand %',
-};
-
+// Beschriftungen (Felder, Dropdown-Optionen, Part-Gruppen) zweisprachig: core/lvgl/propLabels.ts
+const label = (key: string) => propLabel(key, lang.value);
+const opts = (key: string) => selectOptions(key, lang.value);
 
 const BOOL_KEYS = new Set(['checked', 'hidden', 'recolor', 'one_line', 'password_mode', 'animated', 'line_rounded', 'checkable', 'scrollable', 'adjustable', 'indicator_arc_rounded', 'arc_rounded']);
 const NUM_KEYS = new Set(['font_size', 'value', 'min_value', 'max_value', 'arc_width', 'decimals',
   'brightness', 'selected_index', 'max_length', 'size', 'img_buffer_size']);
 
 function kindForKey(key: string): FieldKind {
-  if (key in SELECT_OPTIONS) return 'select';
+  if (hasSelectOptions(key)) return 'select';
   if (BOOL_KEYS.has(key)) return 'bool';
   if (key === 'options') return 'list';
   if (key.endsWith('_color') || key === 'color' || key === 'bg_color') return 'color';
@@ -176,10 +62,10 @@ const IMG_FIELDS_BY_SOURCE: Record<string, Set<string>> = {
 
 /** Seiten-Navigation: „Weiter"-Button & Co. – Optionen ergeben sich aus den Seiten. */
 const pageActionOptions = computed(() => [
-  { v: '', l: '— (keine)' },
-  { v: 'next', l: 'Nächste Seite' },
-  { v: 'prev', l: 'Vorherige Seite' },
-  ...doc.pages.map((p) => ({ v: `show:${p.id}`, l: `Seite zeigen: ${p.name}` })),
+  { v: '', l: t('prop_page_action_none') },
+  { v: 'next', l: t('prop_page_action_next') },
+  { v: 'prev', l: t('prop_page_action_prev') },
+  ...doc.pages.map((p, i) => ({ v: `show:${p.id}`, l: `${t('prop_page_action_show')}: ${pageLabel(p, i)}` })),
 ]);
 
 const fields = computed<Field[]>(() => {
@@ -317,13 +203,8 @@ function partFieldsFor(type: WidgetType, part: string): string[] {
   // Beim Indicator bleibt die Füllfarbe dem `color`-Prop vorbehalten.
   return PART_SUFFIXES_UI.filter((s) => !(part === 'indicator' && s === 'bg_color'));
 }
-const PART_SUFFIX_LABELS: Record<string, string> = {
-  bg_color: 'Farbe', radius: 'Radius', border_color: 'Rahmenfarbe', border_width: 'Rahmenbreite',
-  shadow_color: 'Schatten-Farbe', shadow_width: 'Schatten-Breite', pad_all: 'Größe (Padding)',
-  arc_color: 'Bogenfarbe', arc_width: 'Bogenbreite', arc_opa: 'Bogen-Deckkraft %', arc_rounded: 'Enden abgerundet',
-};
 function partFieldLabel(key: string): string {
-  return PART_SUFFIX_LABELS[key.replace(/^(indicator|knob)_/, '')] ?? key;
+  return partLabelFor(key, lang.value);
 }
 const showParts = ref(false);
 const partGroups = computed(() => {
@@ -336,7 +217,7 @@ const partGroups = computed(() => {
     .filter((part) => !(part === 'knob' && type === 'arc' && node?.props.adjustable !== true))
     .map((part) => ({
     part,
-    label: part === 'knob' ? 'Knopf' : type === 'checkbox' ? 'Kästchen' : 'Regler-Füllung',
+    label: partGroupLabel(part, type, lang.value),
     fields: partFieldsFor(type, part).map((s) => ({
       key: `${part}_${s}`,
       kind: kindForKey(`${part}_${s}`),
@@ -396,7 +277,7 @@ const partGroups = computed(() => {
         <input
           type="text"
           :value="doc.selected.name ?? ''"
-          placeholder="(optional)"
+          :placeholder="t('prop_optional')"
           class="prop-input"
           @change="doc.rename(doc.selected!.id, ($event.target as HTMLInputElement).value)"
         />
@@ -407,7 +288,7 @@ const partGroups = computed(() => {
           type="text"
           list="ha-entities"
           :value="doc.selected.entity ?? ''"
-          placeholder="z. B. light.schlafzimmer"
+          :placeholder="t('prop_ha_entity_placeholder')"
           class="prop-input"
           @change="doc.setEntity(doc.selected!.id, ($event.target as HTMLInputElement).value)"
         />
@@ -493,7 +374,7 @@ const partGroups = computed(() => {
         <label class="block text-[10px] text-gray-400">{{ t('prop_align_in_parent') }}</label>
         <select :value="propStr('align')" class="prop-input"
           @change="setAlign(($event.target as HTMLSelectElement).value)">
-          <option v-for="o in SELECT_OPTIONS.align" :key="o.v" :value="o.v">{{ o.l }}</option>
+          <option v-for="o in opts('align')" :key="o.v" :value="o.v">{{ o.l }}</option>
         </select>
       </div>
 
@@ -574,7 +455,7 @@ const partGroups = computed(() => {
 
       <!-- Typ-spezifische Felder -->
       <div v-for="field in fields" :key="field.key">
-        <label class="block text-[10px] text-gray-400">{{ LABELS[field.key] ?? field.key }}</label>
+        <label class="block text-[10px] text-gray-400">{{ label(field.key) }}</label>
 
         <input v-if="field.kind === 'color'" type="color" :value="propColor(field.key)"
           class="h-8 w-full rounded border border-white/10 bg-transparent"
@@ -595,7 +476,7 @@ const partGroups = computed(() => {
 
         <select v-else-if="field.kind === 'select'" :value="propStr(field.key)" class="prop-input"
           @change="setProp(field.key, ($event.target as HTMLSelectElement).value)">
-          <option v-for="o in SELECT_OPTIONS[field.key]" :key="o.v" :value="o.v">{{ o.l }}</option>
+          <option v-for="o in opts(field.key)" :key="o.v" :value="o.v">{{ o.l }}</option>
         </select>
 
         <div v-else-if="field.kind === 'range'" class="flex items-center gap-2">
@@ -649,7 +530,7 @@ const partGroups = computed(() => {
         </button>
         <div v-if="showAdvanced" class="mt-1.5 space-y-2">
           <div v-for="field in universalFields" :key="field.key">
-            <label class="block text-[10px] text-gray-400">{{ LABELS[field.key] ?? field.key }}</label>
+            <label class="block text-[10px] text-gray-400">{{ label(field.key) }}</label>
 
             <input v-if="field.kind === 'color'" type="color" :value="propColor(field.key)"
               class="h-8 w-full rounded border border-white/10 bg-transparent"
@@ -663,7 +544,7 @@ const partGroups = computed(() => {
 
             <select v-else-if="field.kind === 'select'" :value="propStr(field.key)" class="prop-input"
               @change="setProp(field.key, ($event.target as HTMLSelectElement).value)">
-              <option v-for="o in SELECT_OPTIONS[field.key]" :key="o.v" :value="o.v">{{ o.l }}</option>
+              <option v-for="o in opts(field.key)" :key="o.v" :value="o.v">{{ o.l }}</option>
             </select>
 
             <div v-else-if="field.kind === 'range'" class="flex items-center gap-2">
