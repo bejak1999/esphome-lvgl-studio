@@ -127,8 +127,6 @@ const translations = {
     conn_connecting: 'connecting…',
     conn_connect: 'connect',
     conn_saved: 'saved ✓',
-    conn_error_hint: 'ⓘ possibly enable "Run on sites with restrictions" in add-on permissions',
-    conn_error_hint_title: 'Firefox: Add-on menu (puzzle) → Permissions → enable "Run on sites with restrictions"',
     conn_load_entities: 'Load entities',
     conn_loading: 'loading…',
     // SerialTools
@@ -382,8 +380,6 @@ const translations = {
     conn_connecting: 'verbinde…',
     conn_connect: 'verbinden',
     conn_saved: 'gespeichert ✓',
-    conn_error_hint: 'ⓘ ggf. „Auf Websites mit Einschränkungen ausführen\" in den Add-on-Berechtigungen aktivieren',
-    conn_error_hint_title: 'Firefox: Add-on-Menü (Puzzle) → Berechtigungen → \'Auf Websites mit Einschränkungen ausführen\' aktivieren',
     conn_load_entities: 'Entities laden',
     conn_loading: 'lädt…',
     // SerialTools

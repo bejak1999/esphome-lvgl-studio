@@ -31,10 +31,11 @@ npm run compile      # Typecheck (vue-tsc)
 npm run test         # Run unit tests (vitest)
 ```
 
-## Firefox Cross-Origin WebSocket Permission
+## ESPHome WebSocket & Origin
 
-The ESPHome `device-builder` rejects cross-origin WebSockets from extensions by default. The extension rewrites the `Origin` header during handshake. For Firefox to permit this on local IP addresses/LAN:
-**Add-ons Menu (Puzzle Icon) → ESPHome LVGL Studio → Permissions → Turn ON "Run on restricted sites"**.
+The ESPHome `device-builder` rejects cross-origin WebSockets (HTTP 403). No user action is needed:
+- **Firefox:** `background.ts` rewrites the `Origin` header of the handshake via `webRequestBlocking` (only for the configured host).
+- **Chrome:** declarativeNetRequest cannot modify WebSocket handshakes, so `core/esphome/relay.ts` opens the socket from a hidden iframe on the ESPHome host via a runtime-registered content script (`entrypoints/esphome-relay.content.ts`).
 
 ## Project Structure
 

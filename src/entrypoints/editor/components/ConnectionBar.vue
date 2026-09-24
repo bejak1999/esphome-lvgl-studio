@@ -181,13 +181,6 @@ function loadEntities() {
         </button>
         <span v-if="esphome.error" class="max-w-72 truncate text-red-400" :title="esphome.error">{{ esphome.error }}</span>
       </template>
-      <span
-        v-if="esphome.error && /WebSocket|Timeout/i.test(esphome.error)"
-        class="text-[10px] text-amber-400/80"
-        :title="t('conn_error_hint_title')"
-      >
-        {{ t('conn_error_hint') }}
-      </span>
     </div>
 
     <span class="text-white/10">|</span>
