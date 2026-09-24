@@ -1,0 +1,21 @@
+@import "tailwindcss";
+/* Material Design Icons – ESPHome-LVGL nutzt MDI-Glyphen für Icons. Wird über den
+   Font-Stack der Text-Widgets genutzt (per-Glyph-Fallback zeigt Icons via MDI). */
+@import "@mdi/font/css/materialdesignicons.min.css";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: #0b1220;
+  color: #e5e7eb;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

@@ -1,0 +1,40 @@
+{
+  "name": "esphome-lvgl-studio",
+  "version": "0.1.0",
+  "license": "GPL-3.0-only",
+  "repository": "github:bejak1999/esphome-lvgl-studio",
+  "description": "Browser-Extension: visueller LVGL-Dashboard-Editor für ESPHome mit KI-Agent (OpenRouter) und Auto-Debug-Loop",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "wxt -b firefox",
+    "dev:chrome": "wxt",
+    "build": "wxt build -b firefox",
+    "build:chrome": "wxt build",
+    "zip": "wxt zip -b firefox",
+    "zip:chrome": "wxt zip",
+    "compile": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "postinstall": "wxt prepare",
+    "schema:fetch": "curl -s https://schema.esphome.io/dev/lvgl.json -o lvgl-schema.json",
+    "check": "npm run compile && vitest run"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "esptool-js": "^0.6.0",
+    "html-to-image": "^1.11.11",
+    "pinia": "^2.2.6",
+    "qrcode-generator": "^2.0.4",
+    "vue": "^3.5.13",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@wxt-dev/module-vue": "^1.0.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "vue-tsc": "^2.1.10",
+    "wxt": "^0.19.13"
+  }
+}

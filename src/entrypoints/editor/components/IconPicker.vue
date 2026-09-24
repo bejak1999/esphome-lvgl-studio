@@ -1,0 +1,89 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue';
+import { ICONS, ICON_CATEGORIES, iconGlyph, type IconDef } from '@/core/lvgl/icons';
+import { MDI_ALL } from '@/core/lvgl/mdiAll';
+
+const emit = defineEmits<{ (e: 'select', glyph: string): void; (e: 'close'): void }>();
+
+const search = ref('');
+const activeCat = ref('');
+
+function humanize(s: string): string {
+  return s.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// Ohne Suche: kuratierte Icons nach Kategorie. Mit Suche: über ALLE MDI-Icons.
+const filtered = computed<Pick<IconDef, 'name' | 'label' | 'code'>[]>(() => {
+  const q = search.value.trim().toLowerCase();
+  if (q) {
+    const res: Pick<IconDef, 'name' | 'label' | 'code'>[] = [];
+    for (const [name, code] of MDI_ALL) {
+      if (name.includes(q)) {
+        res.push({ name, label: humanize(name), code });
+        if (res.length >= 150) break;
+      }
+    }
+    return res;
+  }
+  return ICONS.filter((i) => !activeCat.value || i.category === activeCat.value);
+});
+</script>
+
+<template>
+  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-6" @click.self="emit('close')">
+    <div class="flex max-h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
+      <header class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <h2 class="text-sm font-semibold text-white">Icon wählen</h2>
+        <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" @click="emit('close')">✕</button>
+      </header>
+
+      <div class="border-b border-white/10 p-3">
+        <input
+          v-model="search"
+          placeholder="Icon suchen (durchsucht alle MDI-Icons)…"
+          class="mb-2 w-full rounded-lg border border-white/10 bg-[#111827] px-3 py-1.5 text-xs text-gray-100 focus:border-blue-500/60 focus:outline-none"
+        />
+        <div v-if="!search" class="flex flex-wrap gap-1">
+          <button
+            class="rounded-full px-2.5 py-0.5 text-[11px]"
+            :class="!activeCat ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'"
+            @click="activeCat = ''"
+          >
+            Alle
+          </button>
+          <button
+            v-for="c in ICON_CATEGORIES"
+            :key="c"
+            class="rounded-full px-2.5 py-0.5 text-[11px]"
+            :class="activeCat === c ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'"
+            @click="activeCat = c"
+          >
+            {{ c }}
+          </button>
+        </div>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto p-3">
+        <div class="grid grid-cols-6 gap-1.5 sm:grid-cols-8">
+          <button
+            v-for="i in filtered"
+            :key="i.name"
+            class="group flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-blue-500/15"
+            :title="i.label"
+            @click="emit('select', iconGlyph(i.code)); emit('close')"
+          >
+            <span class="mdi-glyph text-[22px] leading-none text-gray-200 group-hover:text-white">{{ iconGlyph(i.code) }}</span>
+            <span class="w-full truncate text-center text-[8px] text-gray-500">{{ i.label }}</span>
+          </button>
+        </div>
+        <div v-if="!filtered.length" class="py-6 text-center text-xs text-gray-500">Keine Icons gefunden.</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.mdi-glyph {
+  font-family: 'Material Design Icons', sans-serif;
+}
+</style>

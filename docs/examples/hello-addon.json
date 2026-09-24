@@ -1,0 +1,47 @@
+{
+  "id": "demo.uhr-label",
+  "name": "Uhrzeit-Label",
+  "version": "1.0.0",
+  "api": 1,
+  "icon": "🕒",
+  "author": "Beispiel",
+  "description": "Kleinstes sinnvolles Addon: ein Label, dessen Farbe und Schriftgröße einstellbar sind.",
+  "fields": [
+    { "key": "farbe", "kind": "color", "label": "Textfarbe", "default": "#e5e7eb" },
+    {
+      "key": "groesse",
+      "kind": "slider",
+      "label": "Schriftgröße",
+      "min": 10,
+      "max": 64,
+      "step": 2,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "key": "text",
+      "kind": "text",
+      "label": "Text",
+      "default": "12:34",
+      "help": "Für eine echte Uhr bindet man das Label später an ESPHome-`time` (Lambda im Code-Modus)."
+    }
+  ],
+  "outputs": [
+    { "key": "breite", "kind": "calc", "expr": "{{ config.groesse }} * 5" }
+  ],
+  "widgets": [
+    {
+      "key": "uhr",
+      "type": "label",
+      "name": "Uhrzeit",
+      "width": "{{ out.breite }}",
+      "height": "{{ config.groesse }}",
+      "props": {
+        "text": "{{ config.text }}",
+        "text_color": "{{ config.farbe }}",
+        "font_size": "{{ config.groesse }}",
+        "text_align": "CENTER"
+      }
+    }
+  ]
+}

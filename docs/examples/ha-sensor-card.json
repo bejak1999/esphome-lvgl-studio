@@ -1,0 +1,109 @@
+{
+  "id": "demo.ha-sensor-card",
+  "name": "Sensorkarte",
+  "version": "1.0.0",
+  "api": 1,
+  "icon": "🌡️",
+  "author": "Beispiel",
+  "description": "Karte mit Titel und großem Messwert für eine Home-Assistant-Entity – zeigt Container mit Kindern, Entity-Bindung und ein YAML-Fragment.",
+  "settings": [
+    {
+      "key": "einheit",
+      "kind": "text",
+      "label": "Standard-Einheit",
+      "default": "°C",
+      "help": "Gilt für alle Instanzen; im Popup pro Karte überschreibbar."
+    }
+  ],
+  "fields": [
+    { "key": "titel", "kind": "text", "label": "Titel", "default": "Wohnzimmer" },
+    {
+      "key": "entity",
+      "kind": "ha-entity",
+      "label": "Home-Assistant-Entity",
+      "help": "Vorschläge kommen aus der verbundenen Home-Assistant-Instanz."
+    },
+    { "key": "einheit", "kind": "text", "label": "Einheit", "default": "" },
+    {
+      "key": "size",
+      "kind": "size",
+      "label": "Kartengröße",
+      "default": { "width": 200, "height": 120 },
+      "presets": ["160x100", "200x120", "240x150"]
+    },
+    { "key": "bg", "kind": "color", "label": "Hintergrund", "default": "#1f2937" },
+    { "key": "akzent", "kind": "color", "label": "Wertfarbe", "default": "#38bdf8" },
+    {
+      "key": "balken",
+      "kind": "checkbox",
+      "label": "Balken unter dem Wert",
+      "default": true
+    }
+  ],
+  "outputs": [
+    {
+      "key": "einheitEffektiv",
+      "kind": "switch",
+      "on": "config.einheit",
+      "cases": { "": "{{ settings.einheit }}" },
+      "fallback": "{{ config.einheit }}"
+    },
+    { "key": "wertGroesse", "kind": "calc", "expr": "round({{ config.size.height }} / 3)" },
+    { "key": "innenBreite", "kind": "calc", "expr": "{{ config.size.width }} - 24" },
+    { "key": "balkenY", "kind": "calc", "expr": "{{ config.size.height }} - 26" }
+  ],
+  "widgets": [
+    {
+      "key": "karte",
+      "type": "obj",
+      "name": "Karte {{ config.titel }}",
+      "width": "{{ config.size.width }}",
+      "height": "{{ config.size.height }}",
+      "props": { "bg_color": "{{ config.bg }}", "radius": 12, "border_width": 0, "bg_opa": 100 },
+      "children": [
+        {
+          "key": "titel",
+          "type": "label",
+          "x": 12,
+          "y": 10,
+          "width": "{{ out.innenBreite }}",
+          "height": 20,
+          "props": { "text": "{{ config.titel }}", "text_color": "#9ca3af", "font_size": 14 }
+        },
+        {
+          "key": "wert",
+          "type": "label",
+          "x": 12,
+          "y": 34,
+          "width": "{{ out.innenBreite }}",
+          "height": "{{ out.wertGroesse }}",
+          "entity": "{{ config.entity }}",
+          "props": {
+            "text": "-- {{ out.einheitEffektiv }}",
+            "text_color": "{{ config.akzent }}",
+            "font_size": "{{ out.wertGroesse }}"
+          }
+        },
+        {
+          "key": "balken",
+          "type": "bar",
+          "visibleIf": { "key": "balken", "truthy": true },
+          "x": 12,
+          "y": "{{ out.balkenY }}",
+          "width": "{{ out.innenBreite }}",
+          "height": 8,
+          "entity": "{{ config.entity }}",
+          "props": {
+            "value": 50,
+            "min_value": 0,
+            "max_value": 100,
+            "color": "{{ config.akzent }}",
+            "bg_color": "#374151",
+            "radius": 4
+          }
+        }
+      ]
+    }
+  ],
+  "yaml": "http_request:\n  timeout: 10s\n"
+}

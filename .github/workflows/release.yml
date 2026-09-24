@@ -1,0 +1,76 @@
+name: Release
+
+# Auslösen: Version in package.json erhöhen, committen, dann `git tag v1.2.3 && git push --tags`.
+# Baut beide Browser-Versionen, hängt die ZIPs an ein GitHub-Release und lädt sie – sofern die
+# jeweiligen Secrets gesetzt sind – automatisch in den Chrome Web Store bzw. auf AMO hoch.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Nur prüfen, nichts an die Stores senden'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Tag muss zur package.json-Version passen
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} passt nicht zu package.json ($PKG)"; exit 1
+          fi
+
+      - run: npm run check
+      - run: npm run zip
+      - run: npm run zip:chrome
+
+      - name: GitHub-Release mit ZIPs
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" .output/*-chrome.zip .output/*-firefox.zip \
+            --title "$GITHUB_REF_NAME" --generate-notes
+
+      # Store-Upload über `wxt submit` (publish-browser-extension). Jeder Store wird nur
+      # bedient, wenn seine Secrets vorhanden sind – so lässt sich einer nach dem anderen anbinden.
+      - name: Store-Upload
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID || 'esphome-lvgl-studio@benni.local' }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+          # 'unlisted' = nur signieren (wie bisher auf AMO), 'listed' = öffentlich im Store.
+          # Umstellen per Repo-Variable FIREFOX_CHANNEL (Settings → Secrets and variables → Variables).
+          FIREFOX_CHANNEL: ${{ vars.FIREFOX_CHANNEL || 'unlisted' }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          ARGS=""
+          if [ -n "$CHROME_REFRESH_TOKEN" ]; then
+            ARGS="$ARGS --chrome-zip $(ls .output/*-chrome.zip)"
+          fi
+          if [ -n "$FIREFOX_JWT_SECRET" ]; then
+            ARGS="$ARGS --firefox-zip $(ls .output/*-firefox.zip) --firefox-sources-zip $(ls .output/*-sources.zip)"
+          fi
+          if [ -z "$ARGS" ]; then
+            echo "Keine Store-Secrets gesetzt – Store-Upload übersprungen."; exit 0
+          fi
+          npx wxt submit $DRY_RUN $ARGS
