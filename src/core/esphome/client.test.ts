@@ -150,4 +150,40 @@ describe('DeviceBuilderClient', () => {
     expect(res.success).toBe(false);
     expect(res.error).toBe('boom');
   });
+
+  it('Verbindungsabbruch: meldet onClose, lehnt neue Anfragen sofort ab, bricht Jobs ab', async () => {
+    const mock = new MockWs();
+    let lost = 0;
+    const client = new DeviceBuilderClient('http://dev:36052', { wsFactory: () => mock, onClose: () => lost++ });
+    const p = client.connect();
+    mock.push({ server_version: '1', esphome_version: '2026.9.0' });
+    await p;
+    const job = client.compileAndWait('a.yaml', () => {});
+    mock.push({ message_id: mock.lastId(), result: { job_id: 'j1' } });
+    await Promise.resolve();
+    mock.readyState = 3;
+    mock.onclose?.({});
+    await expect(job).rejects.toThrow();
+    expect(lost).toBe(1);
+    await expect(client.listDevices()).rejects.toThrow();
+  });
+
+  it('gewolltes Trennen ist kein Verbindungsabbruch', async () => {
+    const mock = new MockWs();
+    let lost = 0;
+    const client = new DeviceBuilderClient('http://dev:36052', { wsFactory: () => mock, onClose: () => lost++ });
+    const p = client.connect();
+    mock.push({ server_version: '1', esphome_version: '2026.9.0' });
+    await p;
+    client.close();
+    expect(lost).toBe(0);
+  });
+
+  it('Schließen vor der ServerInfo (z. B. 403) lehnt connect sofort ab', async () => {
+    const mock = new MockWs();
+    const client = new DeviceBuilderClient('http://dev:36052', { wsFactory: () => mock });
+    const p = client.connect(60000);
+    mock.onclose?.({});
+    await expect(p).rejects.toThrow();
+  });
 });

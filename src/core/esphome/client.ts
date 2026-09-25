@@ -74,7 +74,11 @@ export type WsFactory = (url: string) => WebSocketLike;
 export interface ClientOptions {
   token?: string;
   wsFactory?: WsFactory;
+  /** Die bestehende Verbindung ist abgebrochen (Neustart des device-builders, WLAN …). */
+  onClose?: () => void;
 }
+
+const WS_OPEN = 1;
 
 /** Leitet die WS-URL aus der HTTP-Basis-URL ab (http→ws, https→wss, hängt /ws an). */
 export function deriveWsUrl(httpUrl: string): string {
@@ -92,6 +96,8 @@ export class DeviceBuilderClient {
   private counter = 0;
   private pending = new Map<string, Pending>();
   private eventSubs = new Map<string, (event: string, data: unknown) => void>();
+  /** Laufende Jobs (compile/install) – bei Verbindungsabbruch sofort abbrechen statt Timeout. */
+  private jobAborts = new Set<(e: Error) => void>();
   private wsFactory: WsFactory;
 
   serverInfo: ServerInfo | null = null;
@@ -148,6 +154,16 @@ export class DeviceBuilderClient {
         for (const p of this.pending.values()) p.reject(new Error(tr('err_conn_closed')));
         this.pending.clear();
         this.eventSubs.clear();
+        for (const abort of [...this.jobAborts]) abort(new Error(tr('err_conn_closed')));
+        if (!settled) {
+          // Vor der ServerInfo geschlossen (z. B. 403) → nicht erst den Timeout abwarten.
+          settled = true;
+          clearTimeout(timer);
+          reject(new Error(tr('err_ws_error', { url })));
+        } else if (this.ws === ws) {
+          this.ws = null;
+          this.opts.onClose?.();
+        }
       };
     });
   }
@@ -181,7 +197,8 @@ export class DeviceBuilderClient {
   /** Sendet ein Command und wartet auf die ResultMessage. */
   send<T = unknown>(command: string, args: Record<string, unknown> = {}): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      if (!this.ws) return reject(new Error(tr('err_not_connected')));
+      // Tote Verbindung: sofort ablehnen statt ewig auf eine Antwort zu warten.
+      if (!this.ws || this.ws.readyState !== WS_OPEN) return reject(new Error(tr('err_not_connected')));
       const message_id = this.nextId();
       this.pending.set(message_id, { resolve: resolve as (v: unknown) => void, reject });
       this.ws.send(JSON.stringify({ command, message_id, args }));
@@ -224,18 +241,24 @@ export class DeviceBuilderClient {
           const jobId = String(job?.job_id ?? job?.id ?? '');
           if (!jobId) return reject(new Error(tr('err_no_job_id', { cmd: command })));
 
-          const timer = setTimeout(() => {
+          const done = () => {
+            clearTimeout(timer);
             sub.cancel();
-            reject(new Error(`Timeout bei ${command}`));
-          }, timeoutMs);
+            this.jobAborts.delete(abort);
+          };
+          const abort = (e: Error) => {
+            done();
+            reject(e);
+          };
+          this.jobAborts.add(abort);
+          const timer = setTimeout(() => abort(new Error(`Timeout: ${command}`)), timeoutMs);
 
           const sub = this.subscribe('firmware/follow_job', { job_id: jobId }, (event, data) => {
             if (event === 'output') {
               const line = typeof data === 'string' ? data : (data as { line?: string })?.line ?? '';
               if (line) onLine(line);
             } else if (event === 'result') {
-              clearTimeout(timer);
-              sub.cancel();
+              done();
               const r = data as { status?: string; exit_code?: number | null; error?: string | null };
               resolve({
                 success: r?.status === 'completed',
@@ -292,7 +315,9 @@ export class DeviceBuilderClient {
 
 
   close() {
-    this.ws?.close();
+    // Erst lösen, dann schließen: ein gewolltes Trennen ist kein Verbindungsabbruch (onClose).
+    const ws = this.ws;
     this.ws = null;
+    ws?.close();
   }
 }

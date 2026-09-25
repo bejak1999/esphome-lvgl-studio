@@ -69,7 +69,14 @@ export function startFakeEsphome(port = 36999) {
         url: `http://127.0.0.1:${port}`,
         log,
         configs,
-        close: () => new Promise((r) => { wss.close(); server.close(() => r()); }),
+        // Hart beenden wie ein Neustart/Absturz: offene Sockets sofort trennen.
+        close: () =>
+          new Promise((r) => {
+            for (const c of wss.clients) c.terminate();
+            wss.close();
+            server.closeAllConnections?.();
+            server.close(() => r());
+          }),
       }),
     );
   });

@@ -386,6 +386,8 @@ export const translations = {
     canvas_zoom_reset_title: "Zoom to 100%",
     // Ergänzungen (Audit: vollständige Übersetzung)
     canvas_area_label: "Display canvas",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    err_conn_lost: "Connection to ESPHome lost – reconnecting automatically…",
   },
   de: {
     // SettingsForm
@@ -769,6 +771,8 @@ export const translations = {
     canvas_zoom_reset_title: "Auf 100 % zoomen",
     // Ergänzungen (Audit: vollständige Übersetzung)
     canvas_area_label: "Display-Fläche",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    err_conn_lost: "Verbindung zu ESPHome verloren – verbinde automatisch neu…",
   },
 } as const;
 

@@ -12,7 +12,7 @@ import { launch, openPage, clickText, setSettings, sleep, audit, reporter, viewp
 
 const which = process.argv[2] ?? 'all';
 const browsers = which === 'all' ? ['chrome', 'firefox'] : [which];
-const fake = process.env.ESPHOME_URL ? null : await startFakeEsphome();
+let fake = process.env.ESPHOME_URL ? null : await startFakeEsphome();
 const ESPHOME = process.env.ESPHOME_URL ?? fake.url;
 const DEVICE = new RegExp(process.env.E2E_DEVICE ?? 'demo-display', 'i');
 const UNREACHABLE = 'http://10.255.255.1:8123'; // nicht routbar → Timeout-Pfad
@@ -291,4 +291,21 @@ async function functional(browser, base, ok, errors) {
   await clickText(ed, 'button', /^connect$/);
   await sleep(3000);
   ok('Verbindung: trennen & neu verbinden', disconnected && /disconnect/.test(await text(ed)));
+
+  // Verbindungsabbruch (device-builder startet neu): Anzeige, Auto-Reconnect, Änderungen bleiben
+  if (fake) {
+    await clickText(ed, 'button', /^Label$/);
+    await sleep(300);
+    const idOf = () => ed.evaluate(() => (document.querySelector('aside [aria-current=true]')?.textContent ?? '').match(/·\s*(\S+)/)?.[1] ?? '');
+    const treeIds = () => ed.evaluate(() => [...document.querySelectorAll('aside .group > button:first-child')].map((b) => b.textContent.match(/·\s*(\S+)/)?.[1]));
+    const marker = await idOf();
+    await fake.close();
+    await sleep(2500);
+    ok('Abbruch: wird angezeigt (nicht mehr „verbunden“)', /connection to esphome lost/i.test(await text(ed)) && !/disconnect/.test(await text(ed)));
+    fake = await startFakeEsphome();
+    const t0 = Date.now();
+    while (Date.now() - t0 < 45000 && !/disconnect/.test(await text(ed))) await sleep(1000);
+    ok('Abbruch: verbindet automatisch neu', /disconnect/.test(await text(ed)), `${Math.round((Date.now() - t0) / 1000)} s`);
+    ok('Abbruch: ungespeicherte Änderung bleibt erhalten', !!marker && (await treeIds()).includes(marker), marker);
+  }
 }

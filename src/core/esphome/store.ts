@@ -13,6 +13,12 @@ export interface DeviceIssue {
 // Live-WS-Client außerhalb des reaktiven States halten.
 let client: DeviceBuilderClient | null = null;
 
+// Automatisches Wiederverbinden nach Verbindungsabbruch (nicht nach gewolltem Trennen).
+let lastTarget: { url: string; token?: string } | null = null;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+let retryDelay = 3000;
+const MAX_RETRY_DELAY = 30000;
+
 export const useEsphomeStore = defineStore('esphome', {
   state: () => ({
     connected: false,
@@ -48,6 +54,8 @@ export const useEsphomeStore = defineStore('esphome', {
 
   actions: {
     async connect(httpUrl: string, token?: string) {
+      clearTimeout(retryTimer);
+      lastTarget = { url: httpUrl, token };
       this.connecting = true;
       this.error = '';
       try {
@@ -56,9 +64,11 @@ export const useEsphomeStore = defineStore('esphome', {
         client = new DeviceBuilderClient(httpUrl, {
           token,
           wsFactory: import.meta.env.BROWSER === 'chrome' ? relayWsFactory : undefined,
+          onClose: () => this._connectionLost(),
         });
         this.serverInfo = await client.connect();
         this.connected = true;
+        retryDelay = 3000;
         return this.serverInfo;
       } catch (e) {
         this.error = (e as Error).message;
@@ -69,7 +79,35 @@ export const useEsphomeStore = defineStore('esphome', {
       }
     },
 
+    /**
+     * Verbindung unerwartet weg (device-builder neu gestartet, WLAN …): als getrennt anzeigen
+     * und im Hintergrund neu verbinden. Geöffnetes Gerät und ungespeicherte Änderungen bleiben
+     * unangetastet – nach dem Wiederverbinden wird nur die Geräteliste aufgefrischt.
+     */
+    _connectionLost() {
+      client = null;
+      this.connected = false;
+      this.error = tr('err_conn_lost');
+      const target = lastTarget;
+      if (!target) return;
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(async () => {
+        if (this.connected || lastTarget !== target) return; // inzwischen manuell verbunden
+        try {
+          await this.connect(target.url, target.token);
+          await this.loadDevices().catch(() => {});
+        } catch {
+          retryDelay = Math.min(MAX_RETRY_DELAY, retryDelay * 2);
+          this.error = tr('err_conn_lost');
+          this._connectionLost();
+        }
+      }, retryDelay);
+    },
+
     disconnect() {
+      // Gewolltes Trennen: kein automatisches Wiederverbinden.
+      lastTarget = null;
+      clearTimeout(retryTimer);
       client?.close();
       client = null;
       this.connected = false;

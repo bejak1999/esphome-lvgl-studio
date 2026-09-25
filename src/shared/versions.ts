@@ -40,8 +40,27 @@ export const useVersionStore = defineStore('versions', {
       this.versions = (res[keyFor(device)] as CodeVersion[] | undefined) ?? [];
       this.loaded = true;
     },
+    /**
+     * Speichern mit Rückfallebene: Ist der Speicher voll (Chrome: 10 MB für die Extension),
+     * werden die ältesten Stände dieses Geräts verworfen. Klappt es auch dann nicht, wird der
+     * Verlauf nur im Speicher gehalten – ein Verlaufseintrag darf NIE das Speichern aufs Gerät
+     * oder einen KI-Lauf blockieren (beide legen vorher einen Snapshot an).
+     */
     async _persist() {
-      await browser.storage.local.set({ [keyFor(this.device)]: JSON.parse(JSON.stringify(this.versions)) });
+      const key = keyFor(this.device);
+      for (;;) {
+        try {
+          await browser.storage.local.set({ [key]: JSON.parse(JSON.stringify(this.versions)) });
+          return;
+        } catch (e) {
+          if (this.versions.length <= 1) {
+            console.warn('[versions] Verlauf konnte nicht gespeichert werden', e);
+            return;
+          }
+          // this.versions ist aufsteigend nach Zeit sortiert → vorne liegen die ältesten.
+          this.versions.splice(0, Math.ceil(this.versions.length / 4));
+        }
+      }
     },
     /**
      * Neuen Snapshot ablegen. Ist das YAML mit dem jüngsten identisch, passiert nichts
