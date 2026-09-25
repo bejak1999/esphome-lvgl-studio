@@ -515,7 +515,7 @@ export const translations = {
     // SerialTools
     serial_firefox_msg: 'Firefox erlaubt USB-Flashen/-Logs nur auf echten Webseiten, nicht in Erweiterungen.',
     serial_open_dashboard: '🔌 Im ESPHome-Dashboard flashen/loggen',
-    serial_open_dashboard_title: 'ESPHome-Dashboard öffnen – dort Gerät → Install → „Plug into this computer\" (funktioniert in Firefox)',
+    serial_open_dashboard_title: 'ESPHome-Dashboard öffnen – dort Gerät → Install → „Plug into this computer" (funktioniert in Firefox)',
     serial_usb_flash: '🔌 USB flashen',
     serial_usb_flash_title: 'Kompilierte Firmware per USB flashen',
     serial_usb_logs: '🔌 USB-Logs',
@@ -531,7 +531,7 @@ export const translations = {
     pages_rename_title: 'Umbenennen (oder Doppelklick)',
     pages_rename_modal: 'Seite umbenennen',
     pages_display_name: 'Anzeigename',
-    pages_lvgl_id: 'LVGL-id (Ziel für „Seite zeigen\")',
+    pages_lvgl_id: 'LVGL-id (Ziel für „Seite zeigen")',
     pages_cancel: 'Abbrechen',
     pages_apply: 'Übernehmen',
     // PalettePanel
@@ -567,7 +567,7 @@ export const translations = {
     // VersionHistoryModal
     hist_title: 'Code-Versionshistorie',
     hist_snapshot_now: '+ Snapshot jetzt',
-    hist_no_versions: 'Noch keine Versionen. Vor jeder KI-Änderung und jedem „Gerät speichern\" wird automatisch ein Stand gesichert.',
+    hist_no_versions: 'Noch keine Versionen. Vor jeder KI-Änderung und jedem „Gerät speichern" wird automatisch ein Stand gesichert.',
     hist_select_hint: 'Version auswählen, um Änderungen zu sehen.',
     hist_diff_label: 'Unterschied: aktueller Stand → diese Version',
     hist_confirm_replace: 'Aktuellen Stand ersetzen?',
@@ -590,7 +590,7 @@ export const translations = {
     prop_ha_entity_hint: 'Mit Punkt = Home-Assistant-Entity (z. B. light.decke). Ohne Punkt = ID einer lokalen ESPHome-Komponente (z. B. relay1). Beides wird beim Export verdrahtet: Klick schaltet um, der Status wird zurück ins Widget gespiegelt.',
     prop_page_action: 'Seiten-Aktion beim Klick',
     prop_page_action_hint_entity: 'Nicht kombinierbar mit einer Entity-Bindung – der Klick schaltet dann die Entity.',
-    prop_page_action_hint: 'Macht das Widget zum „Weiter\"-Button: wechselt auf dem Display die Seite.',
+    prop_page_action_hint: 'Macht das Widget zum „Weiter"-Button: wechselt auf dem Display die Seite.',
     prop_z_order: 'Ebene (Z-Reihenfolge)',
     prop_z_back_all: 'Ganz nach hinten',
     prop_z_back: 'Eine Ebene nach hinten',

@@ -2,7 +2,7 @@ import { parseDocument, isMap, isSeq, YAMLMap, YAMLSeq, Scalar, type Document } 
 import type { Screen, WidgetNode, WidgetProps, WidgetType } from '../lvgl/types';
 import { CATALOG_BY_TYPE } from '../lvgl/catalog';
 import {
-  TYPE_MAP, UNIVERSAL_PROPS, TEXT_PROPS, TEXT_TYPES, PART_SUFFIXES, partSuffixes, STYLEABLE_PARTS, NO_SHADOW, NO_GRADIENT,
+  TYPE_MAP, UNIVERSAL_PROPS, TEXT_PROPS, TEXT_TYPES, partSuffixes, STYLEABLE_PARTS, NO_SHADOW, NO_GRADIENT,
   YAML_TO_TYPE, type PropKind, type PropMap,
 } from './mapping';
 
@@ -574,7 +574,6 @@ function getPageMap(doc: Document, i = 0): YAMLMap | null {
   if (pages && pages.items.length > i && isMap(pages.items[i])) return pages.items[i] as YAMLMap;
   return null;
 }
-const getFirstPageMap = (doc: Document) => getPageMap(doc, 0);
 
 /** Anzahl der Seiten im Dokument (mindestens 1 – auch bei `lvgl.widgets` ohne pages). */
 function pageCount(doc: Document): number {

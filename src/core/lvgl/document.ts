@@ -30,11 +30,10 @@ function nextInstanceId(existing: AddonInstance[]): string {
 function findNode(
   nodes: WidgetNode[],
   id: string,
-  parent: WidgetNode[] | null = null,
 ): { node: WidgetNode; siblings: WidgetNode[] } | null {
   for (const n of nodes) {
     if (n.id === id) return { node: n, siblings: nodes };
-    const found = findNode(n.children, id, nodes);
+    const found = findNode(n.children, id);
     if (found) return found;
   }
   return null;

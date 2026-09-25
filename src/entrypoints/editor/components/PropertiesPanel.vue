@@ -110,10 +110,6 @@ function propStr(key: string): string {
   const v = doc.selected?.props[key];
   return v == null ? '' : String(v);
 }
-function propNum(key: string): number {
-  const v = doc.selected?.props[key];
-  return typeof v === 'number' ? v : Number(v ?? 0);
-}
 /** Leerer String, wenn die Zahl nicht gesetzt ist (statt irreführender 0). */
 function propNumOrEmpty(key: string): number | '' {
   const v = doc.selected?.props[key];

@@ -341,12 +341,6 @@ function onPointerUp() {
   window.removeEventListener('pointermove', onPointerMove);
 }
 
-/** Findet die Geometrie eines Knotens per ID (flache Suche über den Baum). */
-function findNodeGeom(id: string): { x: number; y: number } | null {
-  const g = findFullGeom(id);
-  return g ? { x: g.x, y: g.y } : null;
-}
-
 function findFullGeom(id: string): { x: number; y: number; width: number; height: number } | null {
   const g = findNodeRef(id);
   return g ? { ...g.geometry } : null;

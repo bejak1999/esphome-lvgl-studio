@@ -148,6 +148,22 @@ cd esphome-lvgl-studio
 npm install
 ```
 
+### Reproducible build (store review)
+The store packages are built from the sources ZIP with exactly these steps (Node.js 22, npm 10):
+```bash
+npm ci
+npm run zip          # → .output/esphome-lvgl-studio-<version>-firefox.zip
+npm run zip:chrome   # → .output/esphome-lvgl-studio-<version>-chrome.zip
+```
+The output is byte-identical to the submitted package.
+
+### Tests
+```bash
+npm run check        # typecheck, ESLint, unit tests
+npm run build && npm run build:chrome
+npm run test:e2e     # Chrome + Firefox against a simulated ESPHome device builder
+```
+
 ### Build Commands
 ```bash
 # Start Firefox extension with Hot-Module Replacement (HMR)
@@ -175,7 +191,7 @@ npm run test
 
 ## 📄 License & Credits
 
-- Licensed under the [GNU General Public License v3.0](LICENSE).
+- Licensed under the [GNU General Public License v3.0](LICENSE). Bundled third-party components and their licenses: [THIRD_PARTY_NOTICES.txt](src/public/THIRD_PARTY_NOTICES.txt).
 - Built with [Vue 3](https://vuejs.org/), [Vite](https://vitejs.dev/), [WXT Extension Framework](https://wxt.dev/), and [Tailwind CSS v4](https://tailwindcss.com/).
 - Material Design Icons provided by [@mdi/font](https://materialdesignicons.com/).
 - ESPHome and LVGL are trademarks of their respective open-source communities.

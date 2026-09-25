@@ -1,0 +1,16 @@
+Third-party software included in ESPHome LVGL Studio
+=====================================================
+
+ESPHome LVGL Studio is licensed under the GNU General Public License v3.0.
+It bundles the following open-source components:
+
+- @mdi/font 7.4.47 — Apache-2.0 — https://github.com/Templarian/MaterialDesign-Webfont
+- esptool-js 0.6.0 — Apache-2.0 — https://github.com/espressif/esptool-js
+- html-to-image 1.11.13 — MIT — https://github.com/bubkoo/html-to-image
+- pinia 2.3.1 — MIT — https://github.com/vuejs/pinia
+- qrcode-generator 2.0.4 — MIT — https://github.com/kazuhikoarase/qrcode-generator
+- vue 3.5.40 — MIT — https://github.com/vuejs/core
+- yaml 2.9.0 — ISC — github:eemeli/yaml
+
+Material Design Icons font (@mdi/font): Apache License 2.0, Copyright (c) Pictogrammers.
+Full license texts: https://www.apache.org/licenses/LICENSE-2.0 and https://opensource.org/license/mit

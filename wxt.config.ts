@@ -14,6 +14,19 @@ const ICONS = {
 };
 export default defineConfig({
   srcDir: 'src',
+  // Quellcode-ZIP für die AMO-Prüfung: nur, was zum Bauen nötig ist. Demo-/Referenzmaterial
+  // gehört nicht hinein – und die lokalen Geräte-Configs (.roundtrip, enthalten Schlüssel) nie.
+  zip: {
+    excludeSources: [
+      '.roundtrip/**',
+      '.env*',
+      'Demo_Vorlagen/**',
+      'Editor Demo/**',
+      'screenshots/**',
+      'lvgl-schema.json',
+      'web-ext-artifacts/**',
+    ],
+  },
   modules: ['@wxt-dev/module-vue'],
   vite: () => ({
     // Cast: @tailwindcss/vite bringt eine eigene Vite-Version mit; der Typ-Mismatch
