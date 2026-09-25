@@ -176,6 +176,15 @@ async function functional(browser, base, ok, errors) {
   }
   ok('Eigenschaften: Breite ändern → YAML', /width: 222/.test(await yamlOf(ed)));
   ok('Ungespeichert-Hinweis erscheint', /unsaved/i.test(await text(ed)));
+
+  // Icon-Suche (volle MDI-Liste wird erst dabei nachgeladen)
+  await clickText(ed, 'aside button', /Pick icon/);
+  await sleep(500);
+  await kb.fill('thermometer');
+  await sleep(1200);
+  const icons = await ed.evaluate(() => [...document.querySelectorAll('[role=dialog] [title]')].map((e) => e.getAttribute('title')));
+  ok('Icon-Suche findet Icons aus der vollen MDI-Liste', icons.filter((t) => /thermometer/i.test(t)).length > 5, icons.slice(0, 5).join(', '));
+  await kb.press('Escape');
   if (original) {
     const out = await yamlOf(ed);
     ok('Bearbeiten erhält Lambdas, !secret & Sensoren', ['!secret wifi_password', "str_sprintf(\"%.1f°C\", x)", 'entity_id: sensor.living_room_temperature'].every((s) => out.includes(s)));
@@ -280,8 +289,11 @@ async function functional(browser, base, ok, errors) {
   await front(ed);
   await setSettings(ed, { ha: { url: UNREACHABLE, token: 'x' } });
   await clickText(ed, 'button', /^Load entities$/);
-  await sleep(10000);
-  ok('HA: nicht erreichbar → Fehlermeldung statt Hänger', /did not respond|timeout/i.test(await text(ed)));
+  const haStart = Date.now();
+  while (Date.now() - haStart < 20000 && /loading…/.test(await text(ed))) await sleep(500);
+  console.log(`      (HA-Fehlermeldung nach ${((Date.now() - haStart) / 1000).toFixed(1)} s)`);
+  const haText = await ed.evaluate(() => (document.querySelector('main > div')?.textContent ?? '').slice(0, 300));
+  ok('HA: nicht erreichbar → Fehlermeldung statt Hänger', /did not respond|timeout/i.test(await text(ed)), haText);
   await setSettings(ed, { ha: { url: '', token: '' } });
 
   // Trennen / neu verbinden

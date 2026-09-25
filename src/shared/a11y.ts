@@ -37,8 +37,12 @@ export const vDialog: Directive<HTMLElement, CloseFn> = {
     states.set(el, { close: binding.value, restore: document.activeElement });
     if (!stack.length) document.addEventListener('keydown', onKeydown, true);
     stack.push(el);
-    // Fokus in den Dialog (erstes Eingabefeld, sonst der Dialog selbst).
-    const first = el.querySelector<HTMLElement>('input:not([type=hidden]), select, textarea, button');
+    // Fokus in den Dialog: bevorzugt ein Eingabefeld (z. B. Suche), sonst der erste Knopf,
+    // sonst der Dialog selbst. (Ein Selektor-String würde einfach das erste in DOM-Reihenfolge
+    // liefern – oft den Schließen-Knopf im Kopf.)
+    const first =
+      el.querySelector<HTMLElement>('input:not([type=hidden]):not([type=checkbox]), textarea, select') ??
+      el.querySelector<HTMLElement>('button');
     if (!el.hasAttribute('tabindex')) el.tabIndex = -1;
     (first ?? el).focus({ preventScroll: true });
   },

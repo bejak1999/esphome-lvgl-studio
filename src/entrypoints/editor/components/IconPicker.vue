@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { ICONS, ICON_CATEGORIES, iconGlyph, type IconDef } from '@/core/lvgl/icons';
-import { MDI_ALL } from '@/core/lvgl/mdiAll';
 import { useI18n } from '@/shared/i18n';
 const { t } = useI18n();
 
@@ -9,6 +8,13 @@ const emit = defineEmits<{ (e: 'select', glyph: string): void; (e: 'close'): voi
 
 const search = ref('');
 const activeCat = ref('');
+
+// Die vollständige MDI-Liste (~210 KB) erst bei der ersten Suche nachladen – sie wird nur
+// hier gebraucht und soll den Editor-Start nicht bremsen.
+const mdiAll = shallowRef<typeof import('@/core/lvgl/mdiAll').MDI_ALL | null>(null);
+watch(search, (q) => {
+  if (q.trim() && !mdiAll.value) import('@/core/lvgl/mdiAll').then((m) => (mdiAll.value = m.MDI_ALL));
+});
 
 function humanize(s: string): string {
   return s.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -19,7 +25,9 @@ const filtered = computed<Pick<IconDef, 'name' | 'label' | 'code'>[]>(() => {
   const q = search.value.trim().toLowerCase();
   if (q) {
     const res: Pick<IconDef, 'name' | 'label' | 'code'>[] = [];
-    for (const [name, code] of MDI_ALL) {
+    // Solange die volle Liste lädt: in den kuratierten Icons suchen.
+    const source = mdiAll.value ?? ICONS.map((i) => [i.name, i.code] as const);
+    for (const [name, code] of source) {
       if (name.includes(q)) {
         res.push({ name, label: humanize(name), code });
         if (res.length >= 150) break;
