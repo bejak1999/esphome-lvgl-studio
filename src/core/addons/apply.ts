@@ -371,3 +371,27 @@ export function validateManifest(input: unknown): string[] {
 export function onlyHints(errors: string[]): boolean {
   return errors.every((e) => e.startsWith(HINT));
 }
+
+/**
+ * Findet Lambda-Code (C++, läuft später auf dem ESP) in einem Manifest: `!lambda`-Werte,
+ * `lambda:`-Keys in Aktionen und `lambda:` im YAML-Fragment. Liefert kurze Ausschnitte für die
+ * Sicherheitswarnung vor der Installation (leer = kein Lambda).
+ */
+export function findLambdas(manifest: unknown): string[] {
+  const out: string[] = [];
+  const clip = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 120);
+  const walk = (v: unknown, key = '') => {
+    if (out.length >= 5) return;
+    if (typeof v === 'string') {
+      if (key === 'lambda' || /!lambda\b/.test(v)) out.push(clip(v));
+      else {
+        // YAML-Fragment: `lambda: …` / `- lambda: |` inklusive der folgenden Zeilen
+        const m = v.match(/(^|\n)[ \t-]*lambda\s*:[^\n]*(\n[ \t]+[^\n]*){0,3}/);
+        if (m) out.push(clip(m[0]));
+      }
+    } else if (Array.isArray(v)) v.forEach((x) => walk(x, key));
+    else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, k);
+  };
+  walk(manifest);
+  return out;
+}

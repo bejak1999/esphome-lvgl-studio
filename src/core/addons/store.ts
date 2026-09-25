@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { browser } from 'wxt/browser';
 import type { AddonManifest, InstalledAddon } from './types';
-import { onlyHints, validateManifest, withDefaults } from './apply';
+import { findLambdas, onlyHints, validateManifest, withDefaults } from './apply';
 import { tr } from '@/shared/i18n';
 
 /**
@@ -36,6 +36,17 @@ export const useAddonsStore = defineStore('addons', {
     /** Letzter Installationsfehler (für die Anzeige in den Einstellungen). */
     error: '' as string,
     busy: false,
+    /**
+     * Addon mit Lambda-Code, das auf eine ausdrückliche Bestätigung wartet (Lambdas sind C++ und
+     * laufen auf dem ESP – nur aus vertrauenswürdigen Quellen installieren).
+     */
+    pendingLambda: null as null | {
+      name: string;
+      snippets: string[];
+      text: string;
+      source: InstalledAddon['source'];
+      sourceUrl?: string;
+    },
   }),
 
   getters: {
@@ -119,8 +130,11 @@ export const useAddonsStore = defineStore('addons', {
       text: string,
       source: InstalledAddon['source'] = 'json',
       sourceUrl?: string,
+      /** true = Lambda-Warnung wurde bestätigt. */
+      trustLambdas = false,
     ): Promise<string[]> {
       this.error = '';
+      this.pendingLambda = null;
       let parsed: unknown;
       try {
         parsed = JSON.parse(text);
@@ -135,6 +149,12 @@ export const useAddonsStore = defineStore('addons', {
         return problems;
       }
       const manifest = parsed as AddonManifest;
+      const snippets = findLambdas(manifest);
+      if (snippets.length && !trustLambdas) {
+        // Noch NICHT installieren – erst nach Bestätigung (confirmPendingLambda).
+        this.pendingLambda = { name: manifest.name ?? manifest.id, snippets, text, source, sourceUrl };
+        return [];
+      }
       const entry: InstalledAddon = {
         manifest,
         settings: {},
@@ -170,6 +190,17 @@ export const useAddonsStore = defineStore('addons', {
       } finally {
         this.busy = false;
       }
+    },
+
+    /** Bestätigte Installation eines Addons mit Lambda-Code. */
+    async confirmPendingLambda(): Promise<string[]> {
+      const p = this.pendingLambda;
+      if (!p) return [];
+      return this.installFromJson(p.text, p.source, p.sourceUrl, true);
+    },
+
+    cancelPendingLambda() {
+      this.pendingLambda = null;
     },
 
     /** Holt ein per URL installiertes Addon erneut von seiner Quelle. */

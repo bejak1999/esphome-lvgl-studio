@@ -54,6 +54,11 @@ function visibleSettings(a: InstalledAddon) {
 
 function report(result: string[], what: string) {
   problems.value = result;
+  // Wartet auf die Lambda-Bestätigung → noch nicht installiert.
+  if (store.pendingLambda) {
+    okMessage.value = '';
+    return;
+  }
   okMessage.value = result.length ? '' : t('addons_installed_ok').replace('{name}', what);
   if (okMessage.value) setTimeout(() => (okMessage.value = ''), 2500);
 }
@@ -61,13 +66,22 @@ function report(result: string[], what: string) {
 async function installUrl() {
   if (!url.value.trim()) return;
   report(await store.installFromUrl(url.value.trim()), 'Addon');
-  if (!problems.value.length) url.value = '';
+  if (!problems.value.length && !store.pendingLambda) url.value = '';
 }
 
 async function installJson() {
   if (!json.value.trim()) return;
   report(await store.installFromJson(json.value), 'Addon');
-  if (!problems.value.length) json.value = '';
+  if (!problems.value.length && !store.pendingLambda) json.value = '';
+}
+
+async function confirmLambda() {
+  const name = store.pendingLambda?.name ?? 'Addon';
+  report(await store.confirmPendingLambda(), name);
+  if (!problems.value.length) {
+    url.value = '';
+    json.value = '';
+  }
 }
 
 async function onFile(ev: Event) {
@@ -138,6 +152,25 @@ function sourceLabel(source: InstalledAddon['source']) {
         <button class="rounded-lg bg-blue-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-blue-700" @click="installJson">
           {{ t('addons_install_json') }}
         </button>
+      </div>
+
+      <!-- Sicherheitswarnung: Addon enthält Lambda-Code (C++, läuft auf dem ESP) -->
+      <div v-if="store.pendingLambda" role="alert" class="mt-1.5 space-y-1.5 rounded-lg border border-red-500/40 bg-red-950/30 p-2">
+        <p class="text-[11px] font-semibold text-red-300">⚠ {{ t('addons_lambda_title').replace('{name}', store.pendingLambda.name) }}</p>
+        <p class="text-[10px] leading-snug text-gray-300">{{ t('addons_lambda_text') }}</p>
+        <pre
+          v-for="(snip, i) in store.pendingLambda.snippets"
+          :key="i"
+          class="overflow-x-auto whitespace-pre-wrap rounded bg-black/40 p-1.5 font-mono text-[10px] text-gray-200"
+        >{{ snip }}</pre>
+        <div class="flex justify-end gap-2">
+          <button class="rounded border border-white/10 px-2.5 py-1 text-[11px] text-gray-200 hover:bg-white/5" @click="store.cancelPendingLambda()">
+            {{ t('addons_lambda_cancel') }}
+          </button>
+          <button class="rounded bg-red-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-red-800" @click="confirmLambda">
+            {{ t('addons_lambda_confirm') }}
+          </button>
+        </div>
       </div>
 
       <ul v-if="problems.length" class="mt-1.5 space-y-0.5 rounded-lg border border-amber-500/30 bg-amber-950/20 p-2">

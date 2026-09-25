@@ -388,6 +388,11 @@ export const translations = {
     canvas_area_label: "Display canvas",
     // Ergänzungen (Audit: vollständige Übersetzung)
     err_conn_lost: "Connection to ESPHome lost – reconnecting automatically…",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    addons_lambda_title: "“{name}” contains program code (lambda)",
+    addons_lambda_text: "Lambdas are C++ code that is compiled into the firmware and runs on your ESP device. It can do anything the device can do (switch outputs, read sensors, network access). Only install addons from sources you trust and check the code below.",
+    addons_lambda_confirm: "Install anyway",
+    addons_lambda_cancel: "Cancel",
   },
   de: {
     // SettingsForm
@@ -773,6 +778,11 @@ export const translations = {
     canvas_area_label: "Display-Fläche",
     // Ergänzungen (Audit: vollständige Übersetzung)
     err_conn_lost: "Verbindung zu ESPHome verloren – verbinde automatisch neu…",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    addons_lambda_title: "„{name}“ enthält Programmcode (Lambda)",
+    addons_lambda_text: "Lambdas sind C++-Code, der in die Firmware kompiliert wird und auf deinem ESP läuft. Er kann alles, was das Gerät kann (Ausgänge schalten, Sensoren lesen, Netzwerkzugriff). Installiere Addons nur aus vertrauenswürdigen Quellen und prüfe den Code unten.",
+    addons_lambda_confirm: "Trotzdem installieren",
+    addons_lambda_cancel: "Abbrechen",
   },
 } as const;
 

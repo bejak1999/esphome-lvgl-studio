@@ -132,6 +132,19 @@ async function functional(browser, base, ok, errors) {
   await sleep(1200);
   ok('Einstellungen: URL speichern & nach Reload erhalten', (await opt.evaluate((s) => document.querySelector(s).value, urlSel)) === ESPHOME);
 
+  // Addon mit Lambda-Code: Warnung, erst nach Bestätigung installiert
+  const lambdaAddon = JSON.stringify({ id: 'e2e.lambda', name: 'E2E Lambda', version: '1.0.0', widgets: [{ key: 'l', type: 'label' }], yaml: ['script:', '  - id: e2e_s', '    then:', '      - lambda: "id(x).publish_state(1);"', ''].join('\n') });
+  await clickText(opt, 'button', /paste json|json einfügen/i);
+  await sleep(300);
+  await opt.evaluate((v) => { const ta = document.querySelector('textarea'); ta.value = v; ta.dispatchEvent(new Event('input', { bubbles: true })); }, lambdaAddon);
+  await clickText(opt, 'button', /^(Install from JSON|Aus JSON installieren)$/);
+  await sleep(500);
+  const warned = await opt.evaluate(() => document.querySelector('[role=alert]')?.textContent ?? '');
+  ok('Addon mit Lambda: Warnung mit Code-Ausschnitt statt Installation', /lambda/i.test(warned) && /publish_state/.test(warned) && !/E2E Lambda\s*1\.0\.0/.test(await opt.evaluate(() => document.body.innerText)));
+  await clickText(opt, '[role=alert] button', /Install anyway|Trotzdem installieren/);
+  await sleep(600);
+  ok('Addon mit Lambda: nach Bestätigung installiert', !(await opt.evaluate(() => !!document.querySelector('[role=alert]'))) && (await opt.evaluate(() => document.body.innerText)).includes('E2E Lambda'));
+
   const ed = await openPage(browser, base, 'editor.html', errors);
   await viewport(ed, 1440, 900);
   await sleep(3500);
@@ -274,6 +287,15 @@ async function functional(browser, base, ok, errors) {
 
   // KI ohne / mit ungültigem Key
   ok('KI: Hinweis ohne Key', /No OpenRouter key/i.test(await text(sp)));
+  const pressed = () => sp.evaluate(() => [...document.querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent.trim()));
+  ok('KI: Standardmodus ist „Bestätigen“', (await pressed()).includes('Confirm'));
+  await clickText(sp, 'button', /^Auto$/);
+  await sleep(400);
+  await sp.reload().catch(() => {});
+  await sleep(2500);
+  ok('KI: „Auto“ bleibt nach Neuladen gespeichert', (await pressed()).includes('Auto'));
+  await clickText(sp, 'button', /^Confirm$/);
+  await sleep(300);
   await setSettings(sp, { ai: { apiKey: 'sk-or-invalid-e2e', model: 'google/gemini-2.0-flash-001', baseUrl: 'https://openrouter.ai/api/v1', contextLength: 0 } });
   await sleep(600);
   await sp.evaluate(() => document.querySelector('textarea')?.focus());
