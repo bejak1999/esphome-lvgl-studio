@@ -7,6 +7,10 @@ import type { DashboardTemplate, WidgetTemplate } from '@/core/templates/types';
 import TemplatePreview from './TemplatePreview.vue';
 import { useI18n } from '@/shared/i18n';
 import { categoryName, templateName } from '@/core/templates/labels';
+import { useSettingsStore } from '@/shared/settings';
+import { TEMPLATE_THEMES, applyTemplateTheme, themeById, DEFAULT_TEMPLATE_THEME } from '@/core/templates/themes';
+import type { WidgetNode } from '@/core/lvgl/types';
+import { localizeTemplate } from '@/core/templates/content';
 
 const emit = defineEmits<{ (e: 'close'): void }>();
 const doc = useDocumentStore();
@@ -25,13 +29,52 @@ const widgetGroups = computed(() => {
     if (!bucket) buckets.set(cat, (bucket = []));
     bucket.push(tpl);
   }
-  const order = [...TEMPLATE_CATEGORY_ORDER, 'Weitere'];
+  // Bekannte Kategorien in fester Reihenfolge, danach eigene (z. B. „Meine Vorlagen“), zuletzt „Weitere“.
+  const custom = [...buckets.keys()].filter((c) => !TEMPLATE_CATEGORY_ORDER.includes(c) && c !== 'Weitere');
+  const order = [...TEMPLATE_CATEGORY_ORDER, ...custom, 'Weitere'];
   return order
     .filter((c) => buckets.get(c)?.length)
     .map((category) => ({ category, items: buckets.get(category)! }));
 });
 
 onMounted(() => templates.load());
+
+// ── Theme der eingebauten Vorlagen (eigene Vorlagen behalten ihre Farben) ──
+const settings = useSettingsStore();
+const theme = computed(() => themeById(settings.settings.templateTheme) ?? themeById(DEFAULT_TEMPLATE_THEME)!);
+const themedBuiltins = computed(() => {
+  const map = new Map<string, WidgetNode>();
+  // Eingebaute Vorlagen: Beispielinhalte in der UI-Sprache, dann Farben im Theme.
+  for (const tpl of templates.widgets) if (tpl.builtin) map.set(tpl.id, applyTemplateTheme(localizeTemplate(tpl.node, lang.value), theme.value));
+  return map;
+});
+const nodeFor = (tpl: WidgetTemplate): WidgetNode => themedBuiltins.value.get(tpl.id) ?? tpl.node;
+const previewBg = (tpl: WidgetTemplate) => (tpl.builtin ? theme.value.surfaces[0] : undefined);
+
+// ── Import / Export eigener Vorlagen ──
+const importInput = ref<HTMLInputElement | null>(null);
+const ioStatus = ref('');
+async function onImportFile(ev: Event) {
+  const input = ev.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  try {
+    const n = await templates.importJson(await file.text());
+    ioStatus.value = t('tpl_imported').replace('{n}', String(n));
+  } catch (e) {
+    ioStatus.value = t('tpl_import_failed') + (e as Error).message;
+  }
+}
+function exportUser() {
+  const blob = new Blob([templates.exportUserJson()], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lvgl-studio-templates.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 async function saveDashboard() {
   await templates.saveDashboard(newDashboardName.value || `Dashboard ${templates.dashboards.length + 1}`, doc.screen);
@@ -52,7 +95,8 @@ async function saveSelectedWidget() {
 
 function insertWidget(tpl: WidgetTemplate) {
   // Skaliert die Vorlage bei Bedarf deterministisch auf die aktuelle Displaygröße.
-  doc.insertTemplate(tpl.node);
+  // Eingebaute Vorlagen kommen im gewählten Theme.
+  doc.insertTemplate(nodeFor(tpl));
 }
 </script>
 
@@ -95,6 +139,37 @@ function insertWidget(tpl: WidgetTemplate) {
         <!-- Widget-Vorlagen -->
         <section>
           <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ t('tpl_widget_templates') }}</h3>
+
+          <!-- Theme der eingebauten Vorlagen -->
+          <div class="mb-3 rounded-lg border border-white/10 bg-white/5 p-2">
+            <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('tpl_theme') }}</p>
+            <div class="flex flex-wrap gap-1.5" role="group" :aria-label="t('tpl_theme')">
+              <button
+                v-for="th in TEMPLATE_THEMES"
+                :key="th.id"
+                type="button"
+                class="flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px]"
+                :class="theme.id === th.id ? 'border-blue-400/60 bg-blue-500/15 text-white' : 'border-white/10 text-gray-300 hover:bg-white/5'"
+                :aria-pressed="theme.id === th.id"
+                @click="settings.saveTemplateTheme(th.id)"
+              >
+                <span class="flex" aria-hidden="true">
+                  <span class="h-3 w-3 rounded-l-sm" :style="{ background: th.surfaces[1] }" />
+                  <span class="h-3 w-3" :style="{ background: th.accents.blue }" />
+                  <span class="h-3 w-3 rounded-r-sm" :style="{ background: th.accents.green }" />
+                </span>
+                {{ lang === 'de' ? th.name.de : th.name.en }}
+              </button>
+            </div>
+            <p class="mt-1.5 text-[10px] text-gray-500">{{ t('tpl_theme_hint') }}</p>
+          </div>
+
+          <div class="mb-2 flex items-center gap-2 text-[11px]">
+            <input ref="importInput" type="file" accept=".json,application/json" class="hidden" @change="onImportFile" />
+            <button class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5" @click="importInput?.click()">{{ t('tpl_import') }}</button>
+            <button class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5 disabled:opacity-40" :disabled="!templates.user.length" @click="exportUser">{{ t('tpl_export_mine') }}</button>
+            <span v-if="ioStatus" role="status" class="text-gray-400">{{ ioStatus }}</span>
+          </div>
           <div class="mb-2 flex gap-2">
             <input
               v-model="newWidgetName"
@@ -114,7 +189,7 @@ function insertWidget(tpl: WidgetTemplate) {
             <h4 class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">{{ categoryName(group.category, lang) }}</h4>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="tpl in group.items" :key="tpl.id" class="flex flex-col gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2">
-                <TemplatePreview :nodes="[tpl.node]" :box="104" class="mx-auto" />
+                <TemplatePreview :nodes="[nodeFor(tpl)]" :box="104" :bg="previewBg(tpl)" class="mx-auto" />
                 <div class="flex items-center justify-between gap-1">
                   <span class="truncate text-[11px] text-gray-200" :title="templateName(tpl, lang)">{{ templateName(tpl, lang) }}</span>
                   <div class="flex shrink-0 gap-1">

@@ -26,6 +26,7 @@ export default defineConfig({
       'lvgl-schema.json',
       'web-ext-artifacts/**',
       'store-assets/**',
+      'meine-vorlagen/**',
     ],
   },
   modules: ['@wxt-dev/module-vue'],

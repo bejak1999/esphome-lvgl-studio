@@ -45,7 +45,9 @@ const displayNodes = computed(() =>
     class="pointer-events-none flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10"
     :style="{ width: box + 'px', height: box + 'px', background: bg }"
   >
-    <div class="relative" :style="{ width: bbox.w + 'px', height: bbox.h + 'px', transform: `scale(${scale})` }">
+    <!-- shrink-0: sonst staucht Flexbox die (unskalierte) Breite auf die Boxgröße und die
+         Vorlage sitzt nach dem Skalieren seitlich versetzt/abgeschnitten. -->
+    <div class="relative shrink-0" :style="{ width: bbox.w + 'px', height: bbox.h + 'px', transform: `scale(${scale})` }">
       <WidgetView v-for="n in displayNodes" :key="n.id" :node="n" :selected-id="null" />
     </div>
   </div>

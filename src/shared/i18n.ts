@@ -401,6 +401,13 @@ export const translations = {
     settings_access_denied: "Saved – but access to {hosts} was not allowed. The extension can only reach these devices once you allow it.",
     // Ergänzungen (Audit: vollständige Übersetzung)
     ai_consent_denied: "The AI assistant sends your messages, the dashboard YAML and preview images to the configured AI service (OpenRouter). Please allow this data transfer when your browser asks – click “Send” again.",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    tpl_theme: "Theme of the built-in templates",
+    tpl_theme_hint: "Built-in templates are inserted in this theme. Your own templates keep their colours.",
+    tpl_import: "Import…",
+    tpl_export_mine: "Export mine",
+    tpl_imported: "{n} template(s) imported.",
+    tpl_import_failed: "Import failed: ",
   },
   de: {
     // SettingsForm
@@ -799,6 +806,13 @@ export const translations = {
     settings_access_denied: "Gespeichert – aber der Zugriff auf {hosts} wurde nicht erlaubt. Die Extension erreicht diese Geräte erst, wenn du ihn erlaubst.",
     // Ergänzungen (Audit: vollständige Übersetzung)
     ai_consent_denied: "Der KI-Assistent sendet deine Nachrichten, das Dashboard-YAML und Vorschaubilder an den eingestellten KI-Dienst (OpenRouter). Bitte erlaube diese Datenübertragung, wenn der Browser fragt – klicke erneut auf „Senden“.",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    tpl_theme: "Theme der eingebauten Vorlagen",
+    tpl_theme_hint: "Eingebaute Vorlagen werden in diesem Theme eingefügt. Eigene Vorlagen behalten ihre Farben.",
+    tpl_import: "Importieren…",
+    tpl_export_mine: "Meine exportieren",
+    tpl_imported: "{n} Vorlage(n) importiert.",
+    tpl_import_failed: "Import fehlgeschlagen: ",
   },
 } as const;
 

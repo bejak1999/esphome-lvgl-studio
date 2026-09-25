@@ -267,6 +267,12 @@ async function functional(browser, base, ok, errors, b) {
   await sleep(500);
   await kb.press('Escape');
   ok('Vorlagen: Widget-Vorlage einfügen', (await count()) > c0);
+  // Standard-Theme Nord: eingefügte Vorlage nutzt Nord-Farben statt der Quell-Palette
+  await mode(ed, /^Split$/);
+  await sleep(300);
+  const tplYaml = (await yamlOf(ed)) ?? '';
+  ok('Vorlagen: im Standard-Theme Nord eingefügt', /0xeceff4/i.test(tplYaml) && /0x(2e34|3b42|434c|444d|4c56)[0-9a-f]{2}/i.test(tplYaml) && !/0x131b2b/i.test(tplYaml), [...new Set(tplYaml.match(/0x[0-9a-f]{6}/gi))].join(' '));
+  await mode(ed, /^Design$/);
   const exported = await ed.evaluate(() => new Promise((res) => {
     const orig = HTMLAnchorElement.prototype.click;
     HTMLAnchorElement.prototype.click = function () { res(this.download); HTMLAnchorElement.prototype.click = orig; };

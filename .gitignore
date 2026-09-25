@@ -22,3 +22,6 @@ screenshots/
 
 # Store-Texte und -Bilder (lokal, nicht Teil der Extension)
 store-assets/
+
+# Persönliche Original-Vorlagen (lokal, nicht veröffentlichen)
+meine-vorlagen/

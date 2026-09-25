@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { browser } from 'wxt/browser';
+import { DEFAULT_TEMPLATE_THEME } from '@/core/templates/themes';
 
 /**
  * Persistente Einstellungen der Extension.
@@ -40,6 +41,8 @@ export interface Settings {
   };
   /** UI language: 'en' (default) or 'de'. */
   language: 'en' | 'de';
+  /** Farb-Theme, in dem die eingebauten Vorlagen eingefügt werden (core/templates/themes.ts). */
+  templateTheme: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -55,6 +58,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   schema: { version: 'dev' },
   language: 'en',
+  templateTheme: DEFAULT_TEMPLATE_THEME,
 };
 
 const STORAGE_KEY = 'settings';
@@ -69,6 +73,7 @@ function mergeWithDefaults(saved: Partial<Settings> | undefined): Settings {
     ai: { ...base.ai, ...(saved.ai ?? {}) },
     schema: { ...base.schema, ...(saved.schema ?? {}) },
     language: saved.language ?? base.language,
+    templateTheme: saved.templateTheme ?? base.templateTheme,
   };
 }
 
@@ -110,9 +115,17 @@ export const useSettingsStore = defineStore('settings', {
      */
     async saveApplyMode(mode: Settings['ai']['applyMode']) {
       this.settings.ai.applyMode = mode;
+      await this._saveOnly((s) => (s.ai.applyMode = mode));
+    },
+    async saveTemplateTheme(id: string) {
+      this.settings.templateTheme = id;
+      await this._saveOnly((s) => (s.templateTheme = id));
+    },
+    /** Nur die angegebene Änderung auf den GESPEICHERTEN Stand anwenden und speichern. */
+    async _saveOnly(change: (s: Settings) => void) {
       const res = await browser.storage.local.get(STORAGE_KEY);
       const stored = mergeWithDefaults(res[STORAGE_KEY] as Partial<Settings> | undefined);
-      stored.ai.applyMode = mode;
+      change(stored);
       await browser.storage.local.set({ [STORAGE_KEY]: stored });
     },
     async save() {

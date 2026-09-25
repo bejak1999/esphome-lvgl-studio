@@ -74,14 +74,26 @@ export const useTemplatesStore = defineStore('templates', {
       return tpl ? JSON.stringify(tpl, null, 2) : null;
     },
 
-    /** Importiert eine Vorlage aus JSON. */
-    async importJson(text: string) {
-      const tpl = JSON.parse(text) as Template;
-      tpl.id = newId();
-      tpl.builtin = false;
-      this.user.push(tpl);
+    /** Importiert eine oder mehrere Vorlagen aus JSON (Objekt oder Liste). Liefert die Anzahl. */
+    async importJson(text: string): Promise<number> {
+      const parsed = JSON.parse(text) as Template | Template[];
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      const valid = list.filter(
+        (t) => t && (t.kind === 'widget' ? !!(t as WidgetTemplate).node : t.kind === 'dashboard' && !!(t as DashboardTemplate).screen),
+      );
+      if (!valid.length) throw new Error('no templates');
+      for (const tpl of valid) {
+        tpl.id = newId();
+        tpl.builtin = false;
+        this.user.push(tpl);
+      }
       await this.persist();
-      return tpl;
+      return valid.length;
+    },
+
+    /** Alle eigenen Vorlagen als JSON (Sicherung / Übertragen in einen anderen Browser). */
+    exportUserJson(): string {
+      return JSON.stringify(this.user, null, 2);
     },
   },
 });
