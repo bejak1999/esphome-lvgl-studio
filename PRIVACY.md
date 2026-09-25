@@ -19,7 +19,7 @@ All configuration data, including but not limited to:
 ## 2. Third-Party Services
 To provide its functionality, the Extension communicates directly with specific third-party services configured by you. The data sent is strictly limited to what is required for the service to function:
 
-- **OpenRouter API:** If you use the AI assistant feature, the chat history, error logs, and your dashboard YAML are sent directly to the OpenRouter API to generate code and fixes. Your OpenRouter API key is used to authenticate these requests.
+- **OpenRouter API (or the AI service you configure):** Only if you use the AI assistant: your chat messages, attached images, error/build logs, your dashboard YAML and rendered preview images are sent directly to that service to generate code and fixes. Your own API key is used to authenticate these requests. Nothing is sent before you use the assistant; in Firefox you are asked for consent (data category “personal communications”) before the first transfer. If the assistant looks up your Home Assistant entities, their IDs and names are included. Your Home Assistant token and API keys stored in the settings are never sent to the AI service – but anything written in plain text inside your YAML (e.g. an `api: encryption: key:` instead of `!secret`) is part of the YAML and therefore sent along.
 - **Local ESPHome Devices:** The Extension connects directly to your local ESPHome devices (via WebSockets or REST APIs) to read logs, compile firmware, and update YAML configurations.
 - **Home Assistant:** If configured, the Extension connects directly to your Home Assistant instance to fetch entity IDs for autocompletion purposes.
 

@@ -34,7 +34,7 @@ for (const b of browsers) {
   const errors = [];
   try {
     await auditViews(browser, base, ok, errors);
-    await functional(browser, base, ok, errors);
+    await functional(browser, base, ok, errors, b);
     const unexpected = [...new Set(errors)].filter((e) => !/openrouter|401|10\.255\.255\.1|Failed to load resource/i.test(e));
     ok('keine unerwarteten Console-Fehler/-Warnungen', unexpected.length === 0, unexpected.slice(0, 4).join(' | '));
   } catch (e) {
@@ -111,7 +111,7 @@ async function deviceValue(page) {
   );
 }
 
-async function functional(browser, base, ok, errors) {
+async function functional(browser, base, ok, errors, b) {
   const yamlOf = (p) => p.evaluate(() => document.querySelector('textarea[aria-label="ESPHome YAML"]')?.value ?? null);
   const text = (p) => p.evaluate(() => document.body.innerText);
   const canvasText = (p) => p.evaluate(() => document.querySelector('[data-lvgl-canvas]')?.innerText ?? '');
@@ -312,9 +312,15 @@ async function functional(browser, base, ok, errors) {
   await (await keyboardFor(sp)).fill('Make the background blue');
   await clickText(sp, 'button', /^Send$/);
   await sleep(8000);
-  ok('KI: ungültiger Key → Fehlermeldung, UI wieder bedienbar',
-    (await sp.evaluate(() => [...document.querySelectorAll('*')].some((e) => /error|401|failed|fetch/i.test(e.textContent) && e.children.length === 0 && e.closest('.justify-start')))) &&
-    !(await sp.evaluate(() => /^Stop$/m.test(document.body.innerText))));
+  const feedText = await sp.evaluate(() => [...document.querySelectorAll('.justify-start')].map((e) => e.textContent).join(' | '));
+  const consentHint = /allow this data transfer/i.test(feedText);
+  if (consentHint) {
+    // Firefox ohne echte Nutzereingabe (CI): Einwilligung nicht erteilt → nichts gesendet, Hinweis.
+    ok('KI: ohne Einwilligung (Firefox) wird nichts gesendet, Hinweis erscheint', b === 'firefox' && !(await sp.evaluate(() => /^Stop$/m.test(document.body.innerText))));
+  } else {
+    ok('KI: ungültiger Key → Fehlermeldung, UI wieder bedienbar',
+      /error|401|failed|fetch/i.test(feedText) && !(await sp.evaluate(() => /^Stop$/m.test(document.body.innerText))), feedText.slice(-200));
+  }
   await setSettings(sp, { ai: { apiKey: '', model: 'google/gemini-2.0-flash-001', baseUrl: 'https://openrouter.ai/api/v1', contextLength: 0 } });
 
   // Home Assistant nicht erreichbar → Timeout-Meldung

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { tr, useI18n } from '@/shared/i18n';
+import { requestAiConsent } from '@/shared/dataConsent';
 import { useSettingsStore } from '@/shared/settings';
 import { openEditorTab } from '@/shared/messaging';
 import { pageLabel, useDocumentStore } from '@/core/lvgl/document';
@@ -279,6 +280,9 @@ async function compileWithAutofix() {
     return;
   }
   if (running.value) return;
+  // Firefox: Einwilligung für eine evtl. nötige KI-Korrektur jetzt (im Klick) einholen – nach dem
+  // Kompilieren wäre die Nutzeraktion vorbei. Bereits erteilt → kein Dialog.
+  const aiConsent = hasKey.value ? requestAiConsent() : Promise.resolve(false);
   running.value = true;
   stopFlag.value = false;
   abortController = new AbortController();
@@ -308,6 +312,10 @@ async function compileWithAutofix() {
       feed.value.push({ role: 'error', text: isDe ? `❌ Fehlgeschlagen (${res.status}). Log-Ende:\n${tail.slice(-1400)}` : `❌ Failed (${res.status}). Log end:\n${tail.slice(-1400)}` });
       if (!hasKey.value) {
         feed.value.push({ role: 'error', text: isDe ? 'Kein OpenRouter-Key – kann nicht automatisch nachbessern.' : 'No OpenRouter key set – cannot automatically fix.' });
+        break;
+      }
+      if (!(await aiConsent)) {
+        feed.value.push({ role: 'error', text: t('ai_consent_denied') });
         break;
       }
       if (attempt >= 4) {
@@ -667,6 +675,11 @@ async function send() {
   if ((!text && !attachments.value.length) || running.value) return;
   if (!hasKey.value) {
     feed.value.push({ role: 'error', text: t('side_no_key') });
+    return;
+  }
+  // Firefox: Einwilligung zur Übertragung an den KI-Dienst – synchron im Klick/Enter anfragen.
+  if (!(await requestAiConsent())) {
+    feed.value.push({ role: 'error', text: t('ai_consent_denied') });
     return;
   }
 

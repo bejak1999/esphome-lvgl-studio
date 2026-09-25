@@ -81,8 +81,11 @@ export default defineConfig({
           id: 'esphome-lvgl-studio@benni.local',
           // 140: erste Version mit data_collection_permissions (AMO-Pflichtfeld).
           strict_min_version: '140.0',
+          // Keine Pflicht-Datenerhebung. Optional: Chat/YAML/Vorschaubilder an den KI-Dienst –
+          // wird vor dem ersten KI-Aufruf erfragt (src/shared/dataConsent.ts).
           data_collection_permissions: {
             required: ['none'],
+            optional: ['personalCommunications'],
           },
         },
         // Android kennt data_collection_permissions erst ab 142.

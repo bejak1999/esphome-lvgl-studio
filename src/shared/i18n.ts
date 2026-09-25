@@ -399,6 +399,8 @@ export const translations = {
     host_access_missing: "Access to {host} not allowed yet.",
     host_access_allow: "Allow",
     settings_access_denied: "Saved – but access to {hosts} was not allowed. The extension can only reach these devices once you allow it.",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    ai_consent_denied: "The AI assistant sends your messages, the dashboard YAML and preview images to the configured AI service (OpenRouter). Please allow this data transfer when your browser asks – click “Send” again.",
   },
   de: {
     // SettingsForm
@@ -795,6 +797,8 @@ export const translations = {
     host_access_missing: "Zugriff auf {host} noch nicht erlaubt.",
     host_access_allow: "Erlauben",
     settings_access_denied: "Gespeichert – aber der Zugriff auf {hosts} wurde nicht erlaubt. Die Extension erreicht diese Geräte erst, wenn du ihn erlaubst.",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    ai_consent_denied: "Der KI-Assistent sendet deine Nachrichten, das Dashboard-YAML und Vorschaubilder an den eingestellten KI-Dienst (OpenRouter). Bitte erlaube diese Datenübertragung, wenn der Browser fragt – klicke erneut auf „Senden“.",
   },
 } as const;
 
