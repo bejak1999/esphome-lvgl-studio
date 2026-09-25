@@ -24,6 +24,8 @@ interface WorkingDoc {
   baseYaml: string;
   /** Im Dokument platzierte Addon-Instanzen (siehe core/addons/). */
   addons?: AddonInstance[];
+  sourceYaml?: string;
+  sourceModel?: string;
   at: number;
 }
 
@@ -44,6 +46,9 @@ export function useDocSync() {
         activePage: doc.activePage,
         baseYaml: doc.baseYaml,
         addons: JSON.parse(JSON.stringify(doc.addons)),
+        // Originaltext + Fingerabdruck, damit auch die Gegenseite unverändert exakt exportiert.
+        sourceYaml: doc.sourceYaml,
+        sourceModel: doc.sourceModel,
         at: Date.now(),
       };
       browser.storage.local.set({ [KEY]: payload }).catch(() => {});
@@ -62,6 +67,9 @@ export function useDocSync() {
       }
       doc.baseYaml = v.baseYaml ?? '';
       doc.addons = v.addons ?? [];
+      // Fehlt der Originaltext (älterer Stand), gilt das Dokument einfach als bearbeitet.
+      doc.sourceYaml = v.sourceYaml ?? '';
+      doc.sourceModel = v.sourceModel ?? '';
       doc.selectedId = null;
     } finally {
       // kurz warten, damit der eigene watch die Anwendung nicht sofort re-persistiert

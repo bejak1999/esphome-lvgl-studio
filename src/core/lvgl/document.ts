@@ -45,9 +45,14 @@ function findNode(
  * JSON-Roundtrip statt `structuredClone`: Vorlagen können aus einem Store kommen und sind
  * dann reaktive Proxies – darauf wirft `structuredClone` `DataCloneError`.
  */
-/** Vergleichswert für „Modell seit dem Import unverändert?" (Seiten + Addon-Instanzen). */
-function modelFingerprint(s: { pages: unknown; addons: unknown }): string {
-  return JSON.stringify([s.pages, s.addons]);
+/**
+ * Vergleichswert für „seit dem Import unverändert?": Seiten, Addon-Instanzen UND Basis-YAML.
+ * Das Basis-YAML gehört dazu, weil zwei Geräte ein identisches Modell haben können (z. B. zwei
+ * Configs ohne Display) – ohne es könnte nach einem Gerätewechsel der Text des falschen Geräts
+ * exportiert werden.
+ */
+export function modelFingerprint(s: { pages: unknown; addons: unknown; baseYaml: string }): string {
+  return JSON.stringify([s.pages, s.addons, s.baseYaml]);
 }
 
 /** Anzeigename einer Seite: eigener Name oder „Page n“/„Seite n“. */

@@ -5,6 +5,7 @@ import { useSchemaStore } from '@/core/schema/store';
 import { useSettingsStore } from '@/shared/settings';
 import { useEsphomeStore } from '@/core/esphome/store';
 import { useI18n } from '@/shared/i18n';
+import { useDeferredYaml } from '../deferredYaml';
 
 const doc = useDocumentStore();
 const schema = useSchemaStore();
@@ -12,7 +13,8 @@ const settings = useSettingsStore();
 const esphome = useEsphomeStore();
 const { t } = useI18n();
 
-const issues = computed(() => (schema.loaded ? schema.validate(doc.exportedYaml) : []));
+const deferred = useDeferredYaml();
+const issues = computed(() => (schema.loaded ? schema.validate(deferred?.value ?? doc.exportedYaml) : []));
 const warnings = computed(() => issues.value.filter((i) => i.level === 'warning'));
 const infos = computed(() => issues.value.filter((i) => i.level === 'info'));
 

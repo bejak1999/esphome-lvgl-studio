@@ -19,6 +19,7 @@ import AddonsPanel from './components/addons/AddonsPanel.vue';
 import AddonConfigModal from './components/addons/AddonConfigModal.vue';
 import { useHaStore } from '@/core/ha/store';
 import { useDocSync } from '@/shared/docSync';
+import { provideDeferredYaml } from './deferredYaml';
 
 const ha = useHaStore();
 const { t } = useI18n();
@@ -34,13 +35,15 @@ function configureAddon(iid: string) {
 type Mode = 'design' | 'split' | 'code' | 'preview';
 const mode = ref<Mode>('design');
 const doc = useDocumentStore();
+const showCode = computed(() => mode.value === 'split' || mode.value === 'code');
+const codeYaml = provideDeferredYaml(showCode);
 
 /** Zeile im YAML, in der das aktuell ausgewählte Widget definiert ist (`id: <id>`). */
 const selectedCodeLine = computed<number | null>(() => {
   const id = doc.selectedId;
   if (!id) return null;
   const needle = `id: ${id}`;
-  const lines = doc.exportedYaml.split('\n');
+  const lines = codeYaml.value.split('\n');
   const i = lines.findIndex((l) => l.trim() === needle);
   return i >= 0 ? i + 1 : null;
 });
@@ -57,7 +60,6 @@ const modes = computed<{ id: Mode; label: string }[]>(() => [
 
 const showPalette = computed(() => mode.value === 'design');
 const showCanvas = computed(() => mode.value !== 'code');
-const showCode = computed(() => mode.value === 'split' || mode.value === 'code');
 const showPanels = computed(() => mode.value === 'design' || mode.value === 'split');
 
 function addWidget(type: WidgetType) {
@@ -198,7 +200,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
             <span v-if="yamlError" class="text-[10px] text-red-400">{{ yamlError }}</span>
             <span v-else class="text-[10px] text-emerald-400">{{ t('editor_yaml_hint') }}</span>
           </div>
-          <CodeEditor :model-value="doc.exportedYaml" :highlight-line="selectedCodeLine" @change="applyYaml" />
+          <CodeEditor :model-value="codeYaml" :highlight-line="selectedCodeLine" @change="applyYaml" />
           <ValidationPanel />
         </div>
       </div>

@@ -25,6 +25,22 @@ describe('Export erhält Configs', () => {
     expect(doc.exportedYaml).toBe(DEMO);
   });
 
+  it('Gerätewechsel per Sync: nie der Originaltext des vorherigen Geräts (gleiches Modell)', () => {
+    // Editor hat A geöffnet; die Sidebar wechselt auf B – beide ohne Display, Modell identisch.
+    const OTHER = SENSOR.replace('name: sensor-node', 'name: other-node').replace('GPIO4', 'GPIO5');
+    const a = useDocumentStore();
+    a.importYaml(SENSOR);
+    setActivePinia(createPinia());
+    const b = useDocumentStore();
+    b.importYaml(OTHER);
+    // so wie docSync.apply() den Stand der anderen Seite übernimmt
+    a.pages = JSON.parse(JSON.stringify(b.pages));
+    a.baseYaml = b.baseYaml;
+    a.addons = [];
+    expect(a.exportedYaml).not.toContain('name: sensor-node');
+    expect(a.exportedYaml).toContain('name: other-node');
+  });
+
   it('Config ohne Display bekommt keinen lvgl:-Block', () => {
     const doc = useDocumentStore();
     doc.importYaml(SENSOR);
