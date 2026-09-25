@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { fetchEntities, type HaEntity } from './client';
 import { tr } from '@/shared/i18n';
+import { hasHostAccess, hostLabel, requestHostAccess } from '@/shared/hostAccess';
 
 // Injection-Keys für die Entity-Reflexion (Editor-Canvas → WidgetView-Vorschau).
 export const ENTITY_STATES_KEY = 'lvglEntityStates';
@@ -67,9 +68,16 @@ export const useHaStore = defineStore('ha', {
   },
 
   actions: {
-    async load(baseUrl: string, token: string) {
+    /** @param interactive true aus einem Klick („Entities laden") → fehlende Berechtigung erfragen. */
+    async load(baseUrl: string, token: string, interactive = false) {
       if (!baseUrl || !token) {
         this.error = tr('err_ha_missing');
+        return;
+      }
+      // Synchron vor dem ersten await (Nutzeraktion) anfragen bzw. nur prüfen.
+      const access = interactive ? requestHostAccess([baseUrl]) : hasHostAccess([baseUrl]);
+      if (!(await access)) {
+        this.error = tr('err_host_access_ha', { host: hostLabel(baseUrl) });
         return;
       }
       this.loading = true;

@@ -6,6 +6,7 @@ import { NO_GRADIENT, NO_SHADOW, STYLEABLE_PARTS } from '@/core/yaml/mapping';
 import { PROP_FIELDS, UNIVERSAL_FIELD_KEYS } from '@/core/lvgl/fields';
 import type { WidgetNode, WidgetType } from '@/core/lvgl/types';
 import IconPicker from './IconPicker.vue';
+import HostAccessHint from '@/shared/HostAccessHint.vue';
 import { useI18n } from '@/shared/i18n';
 import { hasSelectOptions, partFieldLabel as partLabelFor, partGroupLabel, propLabel, selectOptions } from '@/core/lvgl/propLabels';
 
@@ -483,6 +484,8 @@ const partGroups = computed(() => {
 
         <input v-else type="text" :value="propStr(field.key)" class="prop-input"
           @change="setProp(field.key, ($event.target as HTMLInputElement).value)" />
+        <!-- Live-Bild von einem Gerät im Heimnetz: Zugriff auf dessen Host erlauben -->
+        <HostAccessHint v-if="field.key === 'img_url' && propStr('img_url')" :url="propStr('img_url')" />
       </div>
 
       <!-- Styling einzelner Teile (Regler-Füllung / Knopf) -->

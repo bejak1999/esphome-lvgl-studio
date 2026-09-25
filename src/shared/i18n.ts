@@ -393,6 +393,12 @@ export const translations = {
     addons_lambda_text: "Lambdas are C++ code that is compiled into the firmware and runs on your ESP device. It can do anything the device can do (switch outputs, read sensors, network access). Only install addons from sources you trust and check the code below.",
     addons_lambda_confirm: "Install anyway",
     addons_lambda_cancel: "Cancel",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    err_host_access: "Access to {host} not allowed yet – click “connect”, your browser will ask for permission.",
+    err_host_access_ha: "Access to {host} not allowed yet – click “Load entities”, your browser will ask for permission.",
+    host_access_missing: "Access to {host} not allowed yet.",
+    host_access_allow: "Allow",
+    settings_access_denied: "Saved – but access to {hosts} was not allowed. The extension can only reach these devices once you allow it.",
   },
   de: {
     // SettingsForm
@@ -783,6 +789,12 @@ export const translations = {
     addons_lambda_text: "Lambdas sind C++-Code, der in die Firmware kompiliert wird und auf deinem ESP läuft. Er kann alles, was das Gerät kann (Ausgänge schalten, Sensoren lesen, Netzwerkzugriff). Installiere Addons nur aus vertrauenswürdigen Quellen und prüfe den Code unten.",
     addons_lambda_confirm: "Trotzdem installieren",
     addons_lambda_cancel: "Abbrechen",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    err_host_access: "Zugriff auf {host} noch nicht erlaubt – klicke auf „verbinden“, der Browser fragt dann nach.",
+    err_host_access_ha: "Zugriff auf {host} noch nicht erlaubt – klicke auf „Entities laden“, der Browser fragt dann nach.",
+    host_access_missing: "Zugriff auf {host} noch nicht erlaubt.",
+    host_access_allow: "Erlauben",
+    settings_access_denied: "Gespeichert – aber der Zugriff auf {hosts} wurde nicht erlaubt. Die Extension erreicht diese Geräte erst, wenn du ihn erlaubst.",
   },
 } as const;
 

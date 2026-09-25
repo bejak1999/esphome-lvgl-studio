@@ -12,6 +12,7 @@ import type { FieldSpec } from '@/core/addons/types';
 import { getPath, render } from '@/core/addons/template';
 import type { TemplateContext } from '@/core/addons/template';
 import { tr, useI18n } from '@/shared/i18n';
+import { hasHostAccess, hostLabel, requestHostAccess } from '@/shared/hostAccess';
 const { t } = useI18n();
 
 const props = defineProps<{
@@ -55,10 +56,16 @@ function toOptions(data: unknown): Option[] {
   return [];
 }
 
-async function load() {
+/** @param interactive true aus dem Neu-laden-Klick → fehlende Host-Berechtigung erfragen. */
+async function load(interactive = false) {
   if (!url.value) {
     error.value = t('remote_no_url');
     options.value = [];
+    return;
+  }
+  const access = interactive ? requestHostAccess([url.value]) : hasHostAccess([url.value]);
+  if (!(await access)) {
+    error.value = t('host_access_missing').replace('{host}', hostLabel(url.value)) + ' ⟳';
     return;
   }
   loading.value = true;
@@ -80,8 +87,8 @@ async function load() {
   }
 }
 
-onMounted(load);
-watch(url, load);
+onMounted(() => load());
+watch(url, () => load());
 </script>
 
 <template>
@@ -106,7 +113,7 @@ watch(url, load);
         class="rounded-lg border border-white/10 px-2 py-1 text-[11px] text-gray-300 hover:bg-white/5 disabled:opacity-50"
         :disabled="loading"
         :title="t('remote_reload')" :aria-label="t('remote_reload')"
-        @click="load"
+        @click="load(true)"
       >
         {{ loading ? '…' : '⟳' }}
       </button>

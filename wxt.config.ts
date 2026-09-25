@@ -50,15 +50,23 @@ export default defineConfig({
         ? ['sidePanel', 'scripting']
         : ['webRequest', 'webRequestBlocking']),
     ],
-    // ACHTUNG: `ws://`/`wss://` sind NUR in Firefox gültige Match-Patterns. Chrome erlaubt
-    // in Match-Patterns ausschließlich http, https, file und `*` – ein ws-Eintrag führt dort
-    // zur Manifest-Warnung „URL pattern is malformed" und wird verworfen. Für WebSockets
-    // genügt in Chrome ohnehin das http/https-Pattern desselben Hosts.
+    // Host-Zugriff: fest nur schema.esphome.io (sendet keine CORS-Header). Alle Geräte im
+    // Heimnetz (ESPHome, Home Assistant, Kamera-Bilder, Addon-Quellen) sind OPTIONAL und werden
+    // pro Host zur Laufzeit erfragt (src/shared/hostAccess.ts) – keine „alle Websites"-Warnung
+    // bei der Installation.
+    // ACHTUNG: `ws://`/`wss://` sind NUR in Firefox gültige Match-Patterns (dort nötig für die
+    // Origin-Umschreibung per webRequest). Chrome verwirft sie mit „URL pattern is malformed".
     host_permissions: [
-      'http://*/*',
-      'https://*/*',
-      ...(browser === 'firefox' ? ['ws://*/*', 'wss://*/*'] : []),
+      'https://schema.esphome.io/*',
+      // Nur für die E2E-Tests (E2E_HOSTS=1): den lokalen Test-Server vorab erlauben, weil
+      // automatisierte Browser den Berechtigungsdialog nicht bestätigen können.
+      ...(process.env.E2E_HOSTS === '1'
+        ? ['http://127.0.0.1/*', 'http://10.255.255.1/*', ...(browser === 'firefox' ? ['ws://127.0.0.1/*'] : [])]
+        : []),
     ],
+    ...(browser === 'chrome'
+      ? { optional_host_permissions: ['http://*/*', 'https://*/*'] }
+      : { optional_permissions: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }),
     // `icons` erzeugt WXT automatisch aus src/public/icon/*.png; für den Toolbar-Button
     // muss das Icon ausdrücklich benannt werden. (Das Sidebar-Icon setzt der sidepanel-
     // Entrypoint selbst per <meta name="manifest.default_icon"> – WXT baut sidebar_action

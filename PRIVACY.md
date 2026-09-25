@@ -25,8 +25,8 @@ To provide its functionality, the Extension communicates directly with specific 
 
 We are not responsible for the privacy practices of OpenRouter, ESPHome, or Home Assistant. Please review their respective privacy policies to understand how they handle data transmitted to them.
 
-## 3. Broad Host Permissions
-The Extension requests broad host permissions (e.g., `<all_urls>` or `http://*/*`) during installation. This is strictly a technical requirement to allow the Extension to connect to your local ESPHome and Home Assistant devices, whose IP addresses and ports are dynamically configured by you on your local network. The Extension does not use these permissions to monitor your web browsing activity.
+## 3. Host Permissions
+At installation the Extension only requests access to `schema.esphome.io` (ESPHome configuration schema used for validation). Access to your own devices – the ESPHome dashboard, Home Assistant, camera images or addon data sources – is requested **at runtime, per host**, when you save their address in the settings or click “connect” / “Load entities”. Your browser shows which host is requested, and you can revoke the access at any time in the browser's extension settings. The Extension does not use host access to monitor your web browsing activity.
 
 Browser-specific permissions:
 - **Firefox – `webRequest` / `webRequestBlocking`:** used only to set the `Origin` header of the WebSocket handshake to the ESPHome dashboard URL you configured (the ESPHome device builder rejects connections from extension origins otherwise). No other requests are inspected or modified.

@@ -226,10 +226,11 @@ async function detectDeviceFromTab(): Promise<string> {
   }
 }
 
-async function initConnection() {
+/** @param interactive true aus dem „Verbinden"-Klick → fehlende Host-Berechtigung wird erfragt. */
+async function initConnection(interactive = false) {
   if (esphome.connected || !settings.settings.esphome.url) return;
   try {
-    await esphome.connect(settings.settings.esphome.url, settings.settings.esphome.token);
+    await esphome.connect(settings.settings.esphome.url, settings.settings.esphome.token, interactive);
     const version = esphome.esphomeVersion;
     if (version) {
       settings.settings.schema.version = version;
@@ -774,7 +775,7 @@ async function send() {
       </template>
       <template v-else>
         <span class="text-gray-500">{{ t('sidepanel_esphome') }}</span>
-        <button class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5" @click="settings.settings.esphome.url ? initConnection() : (showSettings = true)">{{ t('sidepanel_connect') }}</button>
+        <button class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5" @click="settings.settings.esphome.url ? initConnection(true) : (showSettings = true)">{{ t('sidepanel_connect') }}</button>
         <span v-if="esphome.error" class="truncate text-red-400" :title="esphome.error">{{ esphome.error }}</span>
       </template>
     </div>

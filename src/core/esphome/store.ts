@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { DeviceBuilderClient, type DeviceInfo, type ServerInfo, type ValidationResult } from './client';
 import { relayWsFactory } from './relay';
 import { tr } from '@/shared/i18n';
+import { hasHostAccess, hostLabel, requestHostAccess } from '@/shared/hostAccess';
 
 /** Aus device-builder gemeldeter Validierungsfehler (aufbereitet für die UI). */
 export interface DeviceIssue {
@@ -24,6 +25,8 @@ export const useEsphomeStore = defineStore('esphome', {
     connected: false,
     connecting: false,
     error: '',
+    /** Für den eingestellten Host fehlt die Berechtigung – „Verbinden" fragt sie an. */
+    needsAccess: false,
     serverInfo: null as ServerInfo | null,
     validating: false,
     compiling: false,
@@ -53,11 +56,26 @@ export const useEsphomeStore = defineStore('esphome', {
   },
 
   actions: {
-    async connect(httpUrl: string, token?: string) {
+    /**
+     * @param interactive true, wenn direkt aus einem Klick aufgerufen („Verbinden") – dann wird
+     *   eine fehlende Host-Berechtigung erfragt. Sonst (Auto-Connect, Wiederverbinden) nur geprüft.
+     */
+    async connect(httpUrl: string, token?: string, interactive = false) {
+      // Synchron vor dem ersten await: nur so gilt die Anfrage als Nutzeraktion.
+      const ws = { websocket: true };
+      const access = interactive ? requestHostAccess([httpUrl], ws) : hasHostAccess([httpUrl], ws);
       clearTimeout(retryTimer);
-      lastTarget = { url: httpUrl, token };
       this.connecting = true;
       this.error = '';
+      if (!(await access)) {
+        this.connecting = false;
+        this.connected = false;
+        this.needsAccess = true;
+        this.error = tr('err_host_access', { host: hostLabel(httpUrl) });
+        throw new Error(this.error);
+      }
+      this.needsAccess = false;
+      lastTarget = { url: httpUrl, token };
       try {
         client?.close();
         // Chrome kann den WS-Origin nicht umschreiben → Relay-iframe (siehe relay.ts).

@@ -9,7 +9,8 @@ import type { RelayMsg } from '@/core/esphome/relay';
  * für den eingestellten Host.
  */
 export default defineContentScript({
-  matches: ['http://*/*', 'https://*/*'], // Platzhalter; echte Registrierung: relay.ts
+  // Keine `matches` hier: WXT würde sie sonst als feste Host-Berechtigung ins Manifest
+  // übernehmen. Registriert wird zur Laufzeit für genau den eingestellten Host (relay.ts).
   registration: 'runtime',
   include: ['chrome'],
   allFrames: true,

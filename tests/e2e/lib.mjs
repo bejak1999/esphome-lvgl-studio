@@ -47,6 +47,9 @@ export async function launch(which) {
     extraPrefsFirefox: {
       'extensions.webextensions.uuids': JSON.stringify({ [FF_ID]: FF_UUID }),
       'xpinstall.signatures.required': false,
+      // Optionale Berechtigungen ohne Dialog erteilen (nur wirksam bei echter Nutzereingabe –
+      // die WebDriver-Eingaben in Firefox ≥ 156 auf Extension-Seiten nicht mehr erlauben).
+      'extensions.webextOptionalPermissionPrompts': false,
     },
   });
   await browser.installExtension(path.join(ROOT, 'firefox-mv2'));

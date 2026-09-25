@@ -32,8 +32,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx puppeteer browsers install firefox@stable
+      # 1) Produktions-Build: Verhalten OHNE Host-Berechtigung (Hinweise, kein Verbindungsversuch)
       - run: npm run build
       - run: npm run build:chrome
+      - name: E2E Berechtigungen (Produktions-Build)
+        run: node tests/e2e/permissions.mjs all
+        env:
+          HEADLESS: '1'
+      # 2) Test-Build mit vorab erlaubtem Test-Server: alle Funktionen
+      - run: npm run build
+        env:
+          E2E_HOSTS: '1'
+      - run: npm run build:chrome
+        env:
+          E2E_HOSTS: '1'
       - name: E2E (Audit + Funktionen, Chrome & Firefox)
         run: npm run test:e2e -- all
         env:

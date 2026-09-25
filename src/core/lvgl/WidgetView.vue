@@ -6,6 +6,7 @@ import { parseLinePoints } from './line';
 import { ENTITY_STATES_KEY, ENTITY_VALUES_KEY, type EntityValue } from '../ha/store';
 import qrcode from 'qrcode-generator';
 import { useI18n } from '@/shared/i18n';
+import { hasHostAccess } from '@/shared/hostAccess';
 const { t } = useI18n();
 
 const props = defineProps<{
@@ -500,6 +501,12 @@ const imgIntervalMs = computed(() => {
 async function fetchLiveImage() {
   const url = imgFetchUrl.value;
   if (!url) return;
+  // Ohne Host-Berechtigung scheitert der Abruf an CORS – Platzhalter zeigen; erlaubt wird im
+  // Eigenschaften-Panel (HostAccessHint beim Bild-URL-Feld).
+  if (!(await hasHostAccess([url]))) {
+    imgError.value = true;
+    return;
+  }
   try {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(String(res.status));

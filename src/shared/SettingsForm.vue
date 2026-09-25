@@ -4,6 +4,7 @@ import { useSettingsStore } from '@/shared/settings';
 import { formatTokens, useModelList } from '@/shared/models';
 import { openOptionsPage } from '@/shared/messaging';
 import { useI18n } from '@/shared/i18n';
+import { hostLabel, hostPatterns, requestHostAccess } from '@/shared/hostAccess';
 
 /**
  * Gemeinsames Einstellungs-Formular für Sidebar UND Options-Seite – damit es die
@@ -28,9 +29,21 @@ onMounted(async () => {
   if (settings.settings.ai.apiKey && !models.value.length) loadModels();
 });
 
+const accessNote = ref('');
+
 async function save() {
+  // Zugriff auf die eingetragenen Geräte gleich hier erfragen – synchron im Klick (Browser-
+  // Vorgabe). Bereits erlaubte Hosts zeigen keinen Dialog.
+  const { esphome, ha, ai } = settings.settings;
+  const urls = [esphome.url, ha.url, ai.baseUrl];
+  // websocket: Firefox braucht für den ESPHome-Host auch ws:// (derselbe Dialog, gleicher Host).
+  const access = requestHostAccess(urls, { websocket: true });
   syncContextLength();
   await settings.save();
+  const granted = await access;
+  accessNote.value = granted
+    ? ''
+    : t('settings_access_denied').replace('{hosts}', urls.filter((u) => hostPatterns([u]).length).map(hostLabel).join(', '));
   saved.value = true;
   setTimeout(() => (saved.value = false), 1600);
 }
@@ -115,6 +128,7 @@ async function save() {
         {{ t('settings_save') }}
       </button>
     </div>
+    <p v-if="accessNote" role="status" class="text-[10px] leading-snug text-amber-300">{{ accessNote }}</p>
   </div>
 </template>
 

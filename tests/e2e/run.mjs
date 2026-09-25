@@ -7,11 +7,21 @@
 //
 // Standardmäßig gegen den nachgebauten device-builder (fake-esphome.mjs). Mit ESPHOME_URL
 // gegen ein echtes Gerät – dann nur lesend: es wird nie gespeichert, kompiliert oder geflasht.
+import fs from 'node:fs';
 import { startFakeEsphome } from './fake-esphome.mjs';
 import { launch, openPage, clickText, setSettings, sleep, audit, reporter, viewport, keyboardFor, front } from './lib.mjs';
 
 const which = process.argv[2] ?? 'all';
 const browsers = which === 'all' ? ['chrome', 'firefox'] : [which];
+// Diese Suite prüft die Funktionen MIT Host-Zugriff → Test-Build, der den Test-Server vorab
+// erlaubt (E2E_HOSTS=1). Den Ablauf OHNE Berechtigung prüft tests/e2e/permissions.mjs.
+if (!process.env.ESPHOME_URL) {
+  const m = JSON.parse(fs.readFileSync('.output/chrome-mv3/manifest.json', 'utf8'));
+  if (!m.host_permissions?.includes('http://127.0.0.1/*')) {
+    console.error('Bitte mit Test-Build ausführen: E2E_HOSTS=1 npm run build && E2E_HOSTS=1 npm run build:chrome');
+    process.exit(2);
+  }
+}
 let fake = process.env.ESPHOME_URL ? null : await startFakeEsphome();
 const ESPHOME = process.env.ESPHOME_URL ?? fake.url;
 const DEVICE = new RegExp(process.env.E2E_DEVICE ?? 'demo-display', 'i');

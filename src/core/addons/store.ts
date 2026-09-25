@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import type { AddonManifest, InstalledAddon } from './types';
 import { findLambdas, onlyHints, validateManifest, withDefaults } from './apply';
 import { tr } from '@/shared/i18n';
+import { hostLabel, requestHostAccess } from '@/shared/hostAccess';
 
 /**
  * Verwaltung der installierten Addons.
@@ -173,7 +174,16 @@ export const useAddonsStore = defineStore('addons', {
 
     /** Lädt ein Manifest von einer URL und installiert es. */
     async installFromUrl(url: string): Promise<string[]> {
+      // Aus dem Klick aufgerufen → Zugriff auf die Quelle synchron erfragen (GitHub-Raw u. ä.
+      // mit offenem CORS brauchen keine Anfrage).
+      const access = requestHostAccess([url]);
       this.busy = true;
+      if (!(await access)) {
+        this.busy = false;
+        const msg = tr('host_access_missing', { host: hostLabel(url) });
+        this.error = msg;
+        return [msg];
+      }
       this.error = '';
       try {
         const res = await fetch(url, { cache: 'no-store' });

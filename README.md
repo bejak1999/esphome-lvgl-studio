@@ -79,6 +79,10 @@ Until the store listings are live, use the manual installation below.
    - Open `chrome://extensions`, enable **Developer mode** (top right toggle).
    - Click **Load unpacked** and select the unzipped folder.
 
+> **Permissions:** the extension does not ask for access to “all websites”. Access to your ESPHome dashboard,
+> Home Assistant and other devices is requested per host when you save the settings or click *connect* –
+> your browser shows a short prompt once per host.
+>
 > **How the ESPHome connection works:** the ESPHome device builder rejects WebSocket connections from foreign origins (HTTP 403).
 > Firefox rewrites the `Origin` header of that one handshake (`webRequest`). Chrome cannot do that for WebSockets, so the
 > Chrome version opens the socket from a hidden frame on your ESPHome host instead (`scripting` permission). Both only ever
@@ -161,7 +165,9 @@ The output is byte-identical to the submitted package.
 ```bash
 npm run check        # typecheck, ESLint, unit tests
 npm run build && npm run build:chrome
-npm run test:e2e     # Chrome + Firefox against a simulated ESPHome device builder
+node tests/e2e/permissions.mjs   # production build: behaviour without host permission
+E2E_HOSTS=1 npm run build && E2E_HOSTS=1 npm run build:chrome
+npm run test:e2e     # Chrome + Firefox against a simulated ESPHome device builder (test build)
 ```
 
 ### Build Commands

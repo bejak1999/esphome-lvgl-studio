@@ -45,7 +45,8 @@ onMounted(async () => {
   }
 });
 
-async function connectEsphome() {
+/** @param interactive true aus einem Klick → fehlende Host-Berechtigung wird erfragt. */
+async function connectEsphome(interactive = false) {
   if (esphome.connected) {
     esphome.disconnect();
     selectedConfig.value = '';
@@ -57,7 +58,7 @@ async function connectEsphome() {
     return;
   }
   try {
-    await esphome.connect(settings.settings.esphome.url, settings.settings.esphome.token);
+    await esphome.connect(settings.settings.esphome.url, settings.settings.esphome.token, interactive);
     // Schema/Docs exakt auf die Version DER Instanz pinnen.
     const version = esphome.esphomeVersion;
     if (version) {
@@ -104,7 +105,7 @@ async function saveDevice() {
 const emit = defineEmits<{ history: [] }>();
 
 function loadEntities() {
-  ha.load(settings.settings.ha.url, settings.settings.ha.token);
+  ha.load(settings.settings.ha.url, settings.settings.ha.token, true);
 }
 </script>
 
@@ -122,7 +123,7 @@ function loadEntities() {
           v{{ esphome.esphomeVersion ?? '?' }}
           <span v-if="esphome.serverInfo?.server_version" class="text-gray-500">· builder {{ esphome.serverInfo.server_version }}</span>
         </span>
-        <button class="rounded border border-white/10 px-2 py-0.5 text-gray-400 hover:bg-white/5" @click="connectEsphome">{{ t('conn_disconnect') }}</button>
+        <button class="rounded border border-white/10 px-2 py-0.5 text-gray-400 hover:bg-white/5" @click="connectEsphome(true)">{{ t('conn_disconnect') }}</button>
 
         <!-- Gerät folgt der Seitenleiste (docSync). Nur ohne aktives Gerät zur Auswahl anbieten. -->
         <span
@@ -176,7 +177,7 @@ function loadEntities() {
         <button
           class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5 disabled:opacity-50"
           :disabled="esphome.connecting"
-          @click="connectEsphome"
+          @click="connectEsphome(true)"
         >
           {{ esphome.connecting ? t('conn_connecting') : t('conn_connect') }}
         </button>
