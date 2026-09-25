@@ -58,9 +58,18 @@ const modes = computed<{ id: Mode; label: string }[]>(() => [
   { id: 'preview', label: t('mode_preview') },
 ]);
 
-const showPalette = computed(() => mode.value === 'design');
 const showCanvas = computed(() => mode.value !== 'code');
 const showPanels = computed(() => mode.value === 'design' || mode.value === 'split');
+
+// Linke Werkzeugleiste: welcher Bereich offen ist (Widgets, Ebenen, Addons).
+type RailSection = 'widgets' | 'layers' | 'addons';
+const railSection = ref<RailSection>('widgets');
+const glyph = (code: number) => String.fromCodePoint(code);
+const railItems = computed(() => [
+  { id: 'widgets' as const, label: t('rail_widgets'), icon: glyph(0xf1c4f) },
+  { id: 'layers' as const, label: t('rail_layers'), icon: glyph(0xf09fe) },
+  { id: 'addons' as const, label: t('rail_addons'), icon: glyph(0xf0a66) },
+]);
 
 function addWidget(type: WidgetType) {
   doc.addWidget(type, 20, 20);
@@ -132,7 +141,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 </script>
 
 <template>
-  <main class="flex h-screen w-screen flex-col overflow-hidden bg-[#0b1220] text-gray-200">
+  <main class="flex h-screen w-screen flex-col overflow-hidden bg-app text-gray-200">
     <input
       ref="fileInput"
       type="file"
@@ -141,41 +150,38 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
       @change="onFileChosen"
     />
 
-    <!-- Kopfzeile -->
-    <!-- flex-wrap: bei schmalem Fenster/hohem Browser-Zoom in eine zweite Zeile umbrechen statt Knöpfe abzuschneiden -->
-    <header class="flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-white/10 px-3 py-1.5">
+    <!-- Kopfzeile: Marke · geöffnetes Gerät · Modus · Aktionen.
+         flex-wrap: bei schmalem Fenster/hohem Zoom umbrechen statt Knöpfe abzuschneiden. -->
+    <header class="flex min-h-11 shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b border-white/10 bg-panel px-3 py-1">
       <div class="flex items-center gap-2">
-        <img src="/icon/128.png" alt="ESPHome LVGL Studio" class="h-7 w-7 shrink-0" />
-        <h1 class="whitespace-nowrap text-sm font-semibold text-white">ESPHome LVGL Studio</h1>
-        <span class="text-xs text-gray-500">/ Editor</span>
+        <img src="/icon/128.png" alt="ESPHome LVGL Studio" class="h-6 w-6 shrink-0" />
+        <h1 class="whitespace-nowrap text-[13px] font-semibold tracking-tight text-white">ESPHome LVGL Studio</h1>
       </div>
 
-      <div class="flex items-center gap-0.5 rounded-lg bg-white/5 p-0.5">
+      <!-- Gerät (Inhalt kommt aus ConnectionBar per Teleport) -->
+      <div id="header-device" class="flex min-w-0 flex-1 items-center" />
+
+      <div class="flex items-center gap-3 text-xs">
         <button v-for="m in modes" :key="m.id"
-          class="rounded-md px-3 py-1 text-xs transition-colors"
-          :class="mode === m.id ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'"
+          class="border-b-2 px-0.5 py-1.5 transition-colors"
+          :class="mode === m.id ? 'border-blue-400 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'"
           :aria-pressed="mode === m.id"
           @click="mode = m.id">
           {{ m.label }}
         </button>
       </div>
 
-      <div class="flex items-center gap-1.5">
-        <button class="rounded-lg border border-white/10 px-2 py-1.5 text-xs text-gray-300 enabled:hover:bg-white/5 disabled:opacity-40"
-          :disabled="!doc.canUndo" :title="t('editor_undo')" @click="doc.undo()">↶</button>
-        <button class="rounded-lg border border-white/10 px-2 py-1.5 text-xs text-gray-300 enabled:hover:bg-white/5 disabled:opacity-40"
-          :disabled="!doc.canRedo" :title="t('editor_redo')" @click="doc.redo()">↷</button>
-        <span class="mx-1 text-white/15">|</span>
-        <button class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-300 hover:bg-white/5" @click="showTemplates = true">{{ t('editor_templates') }}</button>
-        <button class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-300 hover:bg-white/5" @click="triggerImport">{{ t('editor_import') }}</button>
-        <button class="rounded-lg bg-gradient-to-b from-blue-500 to-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:from-blue-600 hover:to-blue-700" @click="exportDownload">{{ t('editor_export') }}</button>
-        <button class="rounded-lg border border-white/10 px-2 py-1.5 text-xs text-gray-300 hover:bg-white/5" :title="t('editor_settings')" @click="openOptionsPage">⚙</button>
+      <div class="flex items-center gap-1">
+        <button class="mdi-glyph rounded-md px-1.5 py-1 text-base leading-none text-gray-300 enabled:hover:bg-white/10 disabled:opacity-40"
+          :disabled="!doc.canUndo" :title="t('editor_undo')" :aria-label="t('editor_undo')" @click="doc.undo()">{{ glyph(0xf054c) }}</button>
+        <button class="mdi-glyph rounded-md px-1.5 py-1 text-base leading-none text-gray-300 enabled:hover:bg-white/10 disabled:opacity-40"
+          :disabled="!doc.canRedo" :title="t('editor_redo')" :aria-label="t('editor_redo')" @click="doc.redo()">{{ glyph(0xf044e) }}</button>
+        <span class="mx-1 h-4 w-px bg-white/10" aria-hidden="true" />
+        <button class="rounded-md px-2 py-1 text-xs text-gray-300 hover:bg-white/10" @click="triggerImport">{{ t('editor_import') }}</button>
+        <button class="rounded-md px-2 py-1 text-xs text-gray-300 hover:bg-white/10" @click="exportDownload">{{ t('editor_export') }}</button>
+        <button class="mdi-glyph rounded-md px-1.5 py-1 text-base leading-none text-gray-300 hover:bg-white/10" :title="t('editor_settings')" :aria-label="t('editor_settings')" @click="openOptionsPage">{{ glyph(0xf08bb) }}</button>
       </div>
     </header>
-
-    <ConnectionBar @history="showHistory = true" />
-    <SerialTools />
-    <PageTabs />
 
     <!-- HA-Entities für Autocomplete im Property-Panel -->
     <datalist id="ha-entities">
@@ -185,36 +191,80 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     </datalist>
 
     <div class="flex min-h-0 flex-1">
-      <!-- Links: Widget-Palette + Addons -->
-      <div v-if="showPalette" class="flex w-56 shrink-0 flex-col border-r border-white/10 bg-[#0e1626]">
-        <PalettePanel @add="addWidget" />
-        <AddonsPanel @configure="configureAddon" />
+      <!-- Werkzeugleiste links: Bereiche + Vorlagen -->
+      <nav v-if="showPanels" :aria-label="t('rail_label')" class="flex w-14 shrink-0 flex-col items-center gap-1 border-r border-white/10 bg-panel py-2">
+        <button
+          v-for="r in railItems"
+          :key="r.id"
+          class="flex w-12 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[9px]"
+          :class="railSection === r.id ? 'bg-blue-600/25 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'"
+          :aria-pressed="railSection === r.id"
+          :title="r.label"
+          @click="railSection = r.id"
+        >
+          <span class="mdi-glyph text-lg leading-none" aria-hidden="true">{{ r.icon }}</span>
+          {{ r.label }}
+        </button>
+        <span class="my-1 h-px w-8 bg-white/10" aria-hidden="true" />
+        <button
+          class="flex w-12 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[9px] text-gray-400 hover:bg-white/5 hover:text-gray-200"
+          :title="t('editor_templates')"
+          @click="showTemplates = true"
+        >
+          <span class="mdi-glyph text-lg leading-none" aria-hidden="true">{{ glyph(0xf0a1d) }}</span>
+          {{ t('rail_templates') }}
+        </button>
+      </nav>
+
+      <!-- Bereich zur Werkzeugleiste -->
+      <div v-if="showPanels" class="flex w-60 shrink-0 flex-col border-r border-white/10 bg-panel">
+        <PalettePanel v-if="railSection === 'widgets'" @add="addWidget" />
+        <aside v-else-if="railSection === 'layers'" :aria-label="t('rail_layers')" class="min-h-0 flex-1 overflow-y-auto p-3">
+          <TreePanel />
+        </aside>
+        <AddonsPanel v-else @configure="configureAddon" />
       </div>
 
-      <!-- Mitte: Canvas und/oder Code -->
-      <div class="flex min-w-0 flex-1">
-        <CanvasStage v-if="showCanvas" :preview="mode === 'preview'" />
+      <!-- Mitte: Seiten-Reiter + Canvas und/oder Code -->
+      <section class="flex min-w-0 flex-1 flex-col">
+        <PageTabs />
+        <div class="flex min-h-0 flex-1">
+          <CanvasStage v-if="showCanvas" :preview="mode === 'preview'" />
 
-        <div v-if="showCode" class="flex min-w-0 flex-1 flex-col border-l border-white/10 bg-[#0e1626]">
-          <div class="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
-            <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">ESPHome YAML</span>
-            <span v-if="yamlError" class="text-[10px] text-red-400">{{ yamlError }}</span>
-            <span v-else class="text-[10px] text-emerald-400">{{ t('editor_yaml_hint') }}</span>
+          <div v-if="showCode" class="flex min-w-0 flex-1 flex-col border-l border-white/10 bg-panel">
+            <div class="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
+              <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">ESPHome YAML</span>
+              <span v-if="yamlError" class="text-[10px] text-red-400">{{ yamlError }}</span>
+              <span v-else class="text-[10px] text-emerald-400">{{ t('editor_yaml_hint') }}</span>
+            </div>
+            <CodeEditor :model-value="codeYaml" :highlight-line="selectedCodeLine" @change="applyYaml" />
+            <ValidationPanel />
           </div>
-          <CodeEditor :model-value="codeYaml" :highlight-line="selectedCodeLine" @change="applyYaml" />
-          <ValidationPanel />
         </div>
-      </div>
+      </section>
 
-      <!-- Rechts: Baum + Properties -->
-      <aside v-if="showPanels" :aria-label="t('editor_panel_label')" class="w-64 shrink-0 overflow-y-auto border-l border-white/10 bg-[#0e1626] p-3">
-        <TreePanel />
+      <!-- Rechts: Eigenschaften -->
+      <aside v-if="showPanels" :aria-label="t('editor_panel_label')" class="w-72 shrink-0 overflow-y-auto border-l border-white/10 bg-panel p-3">
         <PropertiesPanel />
       </aside>
     </div>
+
+    <!-- Statusleiste: Verbindung · USB · (rechts) Canvas-Werkzeuge -->
+    <footer :aria-label="t('statusbar_label')" class="relative flex min-h-8 shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/10 bg-panel px-3 py-1 text-[11px]">
+      <ConnectionBar @history="showHistory = true" />
+      <SerialTools />
+      <div class="flex-1" />
+      <div id="statusbar-canvas" class="flex items-center" />
+    </footer>
 
     <TemplatesModal v-if="showTemplates" @close="showTemplates = false" />
     <VersionHistoryModal v-if="showHistory" @close="showHistory = false" />
     <AddonConfigModal v-if="addonIid" :iid="addonIid" @close="addonIid = null" />
   </main>
 </template>
+
+<style scoped>
+.mdi-glyph {
+  font-family: 'Material Design Icons', sans-serif;
+}
+</style>

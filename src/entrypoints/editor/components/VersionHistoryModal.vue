@@ -38,7 +38,7 @@ function restore(v: CodeVersion) {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" v-dialog="() => emit('close')" @click.self="emit('close')">
-    <div class="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
+    <div class="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-white/10 bg-panel">
       <header class="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
         <div class="flex items-center gap-2">
           <h2 class="text-sm font-semibold text-white">{{ t('hist_title') }}</h2>
@@ -96,7 +96,7 @@ function restore(v: CodeVersion) {
                 </template>
               </div>
             </div>
-            <div class="min-h-0 flex-1 overflow-auto bg-[#0b1220] p-2 font-mono text-[10px] leading-relaxed">
+            <div class="min-h-0 flex-1 overflow-auto bg-app p-2 font-mono text-[10px] leading-relaxed">
               <p v-if="diff && diff.added === 0 && diff.removed === 0" class="text-gray-500">
                 {{ t('hist_identical') }}
               </p>

@@ -97,7 +97,7 @@ watch(url, () => load());
       <select
         v-if="!manual && options.length"
         :value="modelValue"
-        class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-[11px] text-gray-100 focus:border-blue-500/60 focus:outline-none"
+        class="min-w-0 flex-1 rounded-lg border border-white/10 bg-field px-2 py-1 text-[11px] text-gray-100 focus:border-blue-500/60 focus:outline-none"
         @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
       >
         <option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option>
@@ -106,7 +106,7 @@ watch(url, () => load());
         v-else
         :value="modelValue"
         :placeholder="spec.placeholder || t('remote_placeholder')"
-        class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
+        class="min-w-0 flex-1 rounded-lg border border-white/10 bg-field px-2 py-1 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
         @change="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       />
       <button

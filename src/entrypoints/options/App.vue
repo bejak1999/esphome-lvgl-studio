@@ -23,16 +23,16 @@ onMounted(async () => {
       </div>
     </div>
 
-    <p class="mb-4 rounded-lg border border-white/10 bg-[#0e1626] px-3 py-2 text-[11px] text-gray-400">
+    <p class="mb-4 rounded-lg border border-white/10 bg-panel px-3 py-2 text-[11px] text-gray-400">
       {{ t('options_shared_hint') }}
     </p>
 
     <div class="grid gap-4 md:grid-cols-2">
-      <div class="rounded-xl border border-white/10 bg-[#0e1626] p-4">
+      <div class="rounded-xl border border-white/10 bg-panel p-4">
         <SettingsForm />
       </div>
 
-      <div class="rounded-xl border border-white/10 bg-[#0e1626] p-4">
+      <div class="rounded-xl border border-white/10 bg-panel p-4">
         <div class="mb-2 flex items-center gap-2">
           <h2 class="text-sm font-semibold text-white">{{ t('options_addons_title') }}</h2>
           <span class="text-[10px] text-gray-500">{{ t('options_addons_subtitle') }}</span>

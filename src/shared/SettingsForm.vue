@@ -31,6 +31,11 @@ onMounted(async () => {
 
 const accessNote = ref('');
 
+/** Theme sofort in dieser Seite zeigen (die anderen Fenster folgen beim Speichern). */
+function previewUiTheme() {
+  document.documentElement.dataset.uiTheme = settings.settings.uiTheme;
+}
+
 async function save() {
   // Zugriff auf die eingetragenen Geräte gleich hier erfragen – synchron im Klick (Browser-
   // Vorgabe). Bereits erlaubte Hosts zeigen keinen Dialog.
@@ -53,15 +58,25 @@ async function save() {
   <div class="space-y-3 text-[11px]">
     <!-- Language -->
     <div>
-      <label class="mb-1 block font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_language') }}</label>
+      <label class="mb-1 block font-semibold text-gray-300">{{ t('settings_language') }}</label>
       <select v-model="settings.settings.language" class="set-input">
         <option value="en">🇬🇧 English</option>
         <option value="de">🇩🇪 Deutsch</option>
       </select>
     </div>
 
+    <!-- Erscheinungsbild der Oberfläche (wirkt sofort, gespeichert wird mit „Speichern“) -->
     <div>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_title_esphome') }}</p>
+      <label class="mb-1 block font-semibold text-gray-300">{{ t('settings_ui_theme') }}</label>
+      <select v-model="settings.settings.uiTheme" class="set-input" @change="previewUiTheme">
+        <option value="nord">{{ t('ui_theme_nord') }}</option>
+        <option value="graphite">{{ t('ui_theme_graphite') }}</option>
+        <option value="forest">{{ t('ui_theme_forest') }}</option>
+      </select>
+    </div>
+
+    <div>
+      <p class="mb-1 font-semibold text-gray-300">{{ t('settings_title_esphome') }}</p>
       <label class="block text-gray-400">{{ t('settings_url') }}</label>
       <input v-model="settings.settings.esphome.url" class="set-input" placeholder="http://192.168.1.10:6052" />
       <label class="mt-1.5 block text-gray-400">{{ t('settings_token_optional') }}</label>
@@ -69,7 +84,7 @@ async function save() {
     </div>
 
     <div>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_title_ha') }}</p>
+      <p class="mb-1 font-semibold text-gray-300">{{ t('settings_title_ha') }}</p>
       <label class="block text-gray-400">{{ t('settings_base_url') }}</label>
       <input v-model="settings.settings.ha.url" class="set-input" placeholder="http://homeassistant.local:8123" />
       <label class="mt-1.5 block text-gray-400">{{ t('settings_long_lived_token') }}</label>
@@ -77,7 +92,7 @@ async function save() {
     </div>
 
     <div>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_title_ai') }}</p>
+      <p class="mb-1 font-semibold text-gray-300">{{ t('settings_title_ai') }}</p>
       <label class="block text-gray-400">{{ t('settings_api_key') }}</label>
       <input v-model="settings.settings.ai.apiKey" type="password" class="set-input" placeholder="sk-or-…" />
 
@@ -106,7 +121,7 @@ async function save() {
     </div>
 
     <div>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_title_addons') }}</p>
+      <p class="mb-1 font-semibold text-gray-300">{{ t('settings_title_addons') }}</p>
       <p class="text-[10px] leading-snug text-gray-500">
         {{ t('settings_addons_hint') }}
         <button type="button" class="text-blue-400 hover:underline" @click="openOptionsPage">
@@ -116,7 +131,7 @@ async function save() {
     </div>
 
     <div>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('settings_title_schema') }}</p>
+      <p class="mb-1 font-semibold text-gray-300">{{ t('settings_title_schema') }}</p>
       <label class="block text-gray-400">{{ t('settings_schema_version') }}</label>
       <input v-model="settings.settings.schema.version" class="set-input" placeholder="dev" />
     </div>
@@ -137,10 +152,10 @@ async function save() {
   width: 100%;
   border-radius: 0.375rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0b1220;
+  background: var(--color-app);
   padding: 0.3rem 0.5rem;
   font-size: 11px;
-  color: #e5e7eb;
+  color: var(--color-gray-200);
 }
 .set-input:focus {
   border-color: rgba(59, 130, 246, 0.6);

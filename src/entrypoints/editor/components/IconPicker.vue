@@ -41,7 +41,7 @@ const filtered = computed<Pick<IconDef, 'name' | 'label' | 'code'>[]>(() => {
 
 <template>
   <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-6" v-dialog="() => emit('close')" @click.self="emit('close')">
-    <div class="flex max-h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
+    <div class="flex max-h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-white/10 bg-panel">
       <header class="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <h2 class="text-sm font-semibold text-white">{{ t('icon_title') }}</h2>
         <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" :title="t('common_close')" :aria-label="t('common_close')" @click="emit('close')">✕</button>
@@ -51,7 +51,7 @@ const filtered = computed<Pick<IconDef, 'name' | 'label' | 'code'>[]>(() => {
         <input
           v-model="search"
           :placeholder="t('icon_search')"
-          class="mb-2 w-full rounded-lg border border-white/10 bg-[#111827] px-3 py-1.5 text-xs text-gray-100 focus:border-blue-500/60 focus:outline-none"
+          class="mb-2 w-full rounded-lg border border-white/10 bg-field px-3 py-1.5 text-xs text-gray-100 focus:border-blue-500/60 focus:outline-none"
         />
         <div v-if="!search" class="flex flex-wrap gap-1">
           <button

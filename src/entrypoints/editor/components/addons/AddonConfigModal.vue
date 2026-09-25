@@ -100,7 +100,7 @@ function removeInstance() {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6" v-dialog="() => emit('close')" @click.self="emit('close')">
-    <div class="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
+    <div class="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-white/10 bg-panel">
       <header class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
         <div class="flex min-w-0 items-center gap-2">
           <span class="text-lg">{{ manifest?.icon ?? '🧩' }}</span>
@@ -129,7 +129,7 @@ function removeInstance() {
             <label class="mb-1 block text-[11px] text-gray-300">{{ t('addon_config_name_label') }}</label>
             <input
               v-model="name"
-              class="w-full rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-[11px] text-gray-100 focus:border-blue-500/60 focus:outline-none"
+              class="w-full rounded-lg border border-white/10 bg-field px-2 py-1 text-[11px] text-gray-100 focus:border-blue-500/60 focus:outline-none"
             />
           </div>
 
@@ -168,7 +168,7 @@ function removeInstance() {
         <section class="min-w-0 space-y-2">
           <div v-if="manifest.preview">
             <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('addon_config_preview') }}</p>
-            <div class="flex min-h-24 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[#111827] p-1">
+            <div class="flex min-h-24 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-field p-1">
               <img
                 v-if="previewUrl && !previewError"
                 :src="previewUrl"
@@ -192,7 +192,7 @@ function removeInstance() {
 
           <div v-if="summary.yaml">
             <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('addon_config_additional_yaml') }}</p>
-            <pre class="overflow-x-auto rounded-lg border border-white/10 bg-[#111827] p-2 text-[10px] text-gray-400">{{ summary.yaml }}</pre>
+            <pre class="overflow-x-auto rounded-lg border border-white/10 bg-field p-2 text-[10px] text-gray-400">{{ summary.yaml }}</pre>
           </div>
         </section>
       </div>

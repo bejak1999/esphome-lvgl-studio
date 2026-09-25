@@ -114,12 +114,12 @@ function sourceLabel(source: InstalledAddon['source']) {
   <div class="space-y-4 text-[11px]">
     <!-- Installieren -->
     <section>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('addons_install_title') }}</p>
+      <p class="mb-1 font-semibold text-gray-300">{{ t('addons_install_title') }}</p>
       <div class="flex gap-1.5">
         <input
           v-model="url"
           :placeholder="t('addons_install_url_placeholder')"
-          class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0b1220] px-2 py-1.5 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
+          class="min-w-0 flex-1 rounded-lg border border-white/10 bg-app px-2 py-1.5 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
           @keydown.enter.prevent="installUrl"
         />
         <button
@@ -147,7 +147,7 @@ function sourceLabel(source: InstalledAddon['source']) {
           rows="6"
           spellcheck="false"
           :placeholder="t('addons_json_placeholder')"
-          class="w-full rounded-lg border border-white/10 bg-[#0b1220] p-2 font-mono text-[10px] text-gray-100 focus:border-blue-500/60 focus:outline-none"
+          class="w-full rounded-lg border border-white/10 bg-app p-2 font-mono text-[10px] text-gray-100 focus:border-blue-500/60 focus:outline-none"
         />
         <button class="rounded-lg bg-blue-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-blue-700" @click="installJson">
           {{ t('addons_install_json') }}
@@ -184,11 +184,11 @@ function sourceLabel(source: InstalledAddon['source']) {
 
     <!-- Liste -->
     <section>
-      <p class="mb-1 font-semibold uppercase tracking-wide text-gray-500">{{ t('addons_installed_title') }}</p>
-      <p v-if="!list.length" class="mb-1.5 rounded-lg border border-white/10 bg-[#0b1220] p-2 text-[10px] leading-snug text-gray-500">
+      <p class="mb-1 font-semibold text-gray-300">{{ t('addons_installed_title') }}</p>
+      <p v-if="!list.length" class="mb-1.5 rounded-lg border border-white/10 bg-app p-2 text-[10px] leading-snug text-gray-500">
         {{ t('addons_none_installed') }}
       </p>
-      <div v-for="a in list" :key="a.manifest.id" class="mb-1.5 rounded-lg border border-white/10 bg-[#0b1220] p-2">
+      <div v-for="a in list" :key="a.manifest.id" class="mb-1.5 rounded-lg border border-white/10 bg-app p-2">
         <div class="flex items-center gap-2">
           <span>{{ a.manifest.icon ?? '🧩' }}</span>
           <div class="min-w-0 flex-1">

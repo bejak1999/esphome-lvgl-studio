@@ -146,71 +146,67 @@ onBeforeUnmount(() => { session?.stop(); });
 
 <template>
   <!-- Firefox: Web Serial geht nicht aus der Erweiterung – aufs echte Dashboard verweisen. -->
-  <div v-if="firefoxFallback" class="flex items-center gap-2 border-b border-white/10 bg-[#0e1626] px-3 py-1 text-[11px]">
-    <span class="text-gray-500">USB:</span>
-    <span class="text-gray-400">
-      {{ t('serial_firefox_msg') }}
-    </span>
+  <div v-if="firefoxFallback" class="flex min-w-0 items-center gap-1.5">
+    <span class="text-gray-400">USB</span>
     <button
-      class="rounded border border-emerald-500/30 px-2 py-0.5 text-emerald-300 hover:bg-emerald-950/40"
-      :title="t('serial_open_dashboard_title')"
+      class="truncate rounded px-1.5 py-0.5 text-emerald-300 hover:bg-white/10"
+      :title="t('serial_firefox_msg') + ' ' + t('serial_open_dashboard_title')"
       @click="openDashboard"
     >
       {{ t('serial_open_dashboard') }}
     </button>
   </div>
 
-  <div v-else-if="usable" class="border-b border-white/10 bg-[#0e1626]">
-    <div class="flex items-center gap-1.5 px-3 py-1 text-[11px]">
-      <span class="text-gray-500">USB:</span>
-      <button
-        class="rounded border border-emerald-500/30 px-2 py-0.5 text-emerald-300 hover:bg-emerald-950/40 disabled:opacity-50"
-        :disabled="flashing"
-        :title="t('serial_usb_flash_title')"
-        @click="flash"
-      >
-        {{ t('serial_usb_flash') }}<span v-if="flashing"> {{ progress }}%</span>
-      </button>
-      <button
-        class="rounded border px-2 py-0.5"
-        :class="active ? 'border-red-500/40 text-red-300 hover:bg-red-950/40' : 'border-white/10 text-gray-300 hover:bg-white/5'"
-        :title="t('serial_logs_title')"
-        @click="toggleLogs"
-      >
-        {{ active ? t('serial_stop_logs') : t('serial_usb_logs') }}
-      </button>
-      <span v-if="active" class="flex items-center gap-1 text-emerald-400">
-        <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> {{ t('serial_reading') }}
-      </span>
-      <button
-        v-if="lines.length"
-        class="rounded border border-blue-500/30 px-2 py-0.5 text-blue-300 hover:bg-blue-950/40"
-        :title="t('serial_send_ai_title')"
-        @click="sendToAi"
-      >
-        {{ t('serial_send_ai') }}
-      </button>
-      <button
-        v-if="lines.length"
-        class="rounded border border-white/10 px-1.5 py-0.5 text-gray-400 hover:bg-white/5"
-        @click="lines = []"
-      >
-        🧹
-      </button>
-      <button
-        v-if="lines.length"
-        class="rounded border border-white/10 px-1.5 py-0.5 text-gray-400 hover:bg-white/5"
-        @click="showLog = !showLog"
-      >
-        {{ showLog ? '▾' : '▸' }}
-      </button>
-      <div class="flex-1" />
-      <span v-if="status" class="max-w-[45%] truncate text-gray-400" :title="status">{{ status }}</span>
-    </div>
+  <div v-else-if="usable" class="relative flex min-w-0 items-center gap-1.5">
+    <span class="text-gray-400">USB</span>
+    <button
+      class="rounded px-1.5 py-0.5 text-emerald-300 hover:bg-white/10 disabled:opacity-50"
+      :disabled="flashing"
+      :title="t('serial_usb_flash_title')"
+      @click="flash"
+    >
+      {{ t('serial_usb_flash') }}<span v-if="flashing"> {{ progress }}%</span>
+    </button>
+    <button
+      class="rounded px-1.5 py-0.5"
+      :class="active ? 'text-red-300 hover:bg-red-950/40' : 'text-gray-300 hover:bg-white/10'"
+      :title="t('serial_logs_title')"
+      @click="toggleLogs"
+    >
+      {{ active ? t('serial_stop_logs') : t('serial_usb_logs') }}
+    </button>
+    <span v-if="active" class="flex items-center gap-1 text-emerald-400">
+      <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> {{ t('serial_reading') }}
+    </span>
+    <button
+      v-if="lines.length"
+      class="rounded px-1.5 py-0.5 text-blue-300 hover:bg-white/10"
+      :title="t('serial_send_ai_title')"
+      @click="sendToAi"
+    >
+      {{ t('serial_send_ai') }}
+    </button>
+    <button
+      v-if="lines.length"
+      class="rounded px-1.5 py-0.5 text-gray-400 hover:bg-white/10"
+      @click="lines = []"
+    >
+      🧹
+    </button>
+    <button
+      v-if="lines.length"
+      class="rounded px-1.5 py-0.5 text-gray-400 hover:bg-white/10"
+      :aria-expanded="showLog"
+      @click="showLog = !showLog"
+    >
+      {{ showLog ? '▾' : '▴' }}
+    </button>
+    <span v-if="status" class="max-w-72 truncate text-gray-400" :title="status">{{ status }}</span>
+    <!-- Log klappt über der Statusleiste auf -->
     <div
       v-if="showLog && lines.length"
       ref="logEl"
-      class="max-h-48 overflow-auto border-t border-white/10 bg-[#0b1220] px-3 py-1 font-mono text-[10px] leading-[1.4] text-gray-300"
+      class="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-[36rem] max-w-[80vw] overflow-auto rounded-lg border border-white/10 bg-app px-3 py-2 font-mono text-[10px] leading-[1.4] text-gray-300 shadow-2xl"
     >
       <div v-for="(l, i) in lines" :key="i" class="whitespace-pre-wrap break-all">{{ l }}</div>
     </div>

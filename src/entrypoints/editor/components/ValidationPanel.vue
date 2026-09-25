@@ -33,7 +33,7 @@ async function liveValidate() {
 </script>
 
 <template>
-  <div class="border-t border-white/10 bg-[#0b1220]">
+  <div class="border-t border-white/10 bg-app">
     <div class="flex items-center justify-between px-3 py-1.5">
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('val_title') }}</span>

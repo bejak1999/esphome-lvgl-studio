@@ -408,6 +408,20 @@ export const translations = {
     tpl_export_mine: "Export mine",
     tpl_imported: "{n} template(s) imported.",
     tpl_import_failed: "Import failed: ",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    settings_ui_theme: "Appearance",
+    ui_theme_nord: "Nord Frost",
+    ui_theme_graphite: "Graphite & Amber",
+    ui_theme_forest: "Forest & Teal",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    conn_no_device: "No device open",
+    rail_widgets: "Widgets",
+    rail_layers: "Layers",
+    rail_addons: "Addons",
+    rail_templates: "Templates",
+    rail_label: "Tools",
+    statusbar_label: "Status bar",
+    canvas_tools_label: "Canvas",
   },
   de: {
     // SettingsForm
@@ -813,6 +827,20 @@ export const translations = {
     tpl_export_mine: "Meine exportieren",
     tpl_imported: "{n} Vorlage(n) importiert.",
     tpl_import_failed: "Import fehlgeschlagen: ",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    settings_ui_theme: "Erscheinungsbild",
+    ui_theme_nord: "Nord Frost",
+    ui_theme_graphite: "Graphit & Bernstein",
+    ui_theme_forest: "Wald & Petrol",
+    // Ergänzungen (Audit: vollständige Übersetzung)
+    conn_no_device: "Kein Gerät geöffnet",
+    rail_widgets: "Widgets",
+    rail_layers: "Ebenen",
+    rail_addons: "Addons",
+    rail_templates: "Vorlagen",
+    rail_label: "Werkzeuge",
+    statusbar_label: "Statusleiste",
+    canvas_tools_label: "Canvas",
   },
 } as const;
 

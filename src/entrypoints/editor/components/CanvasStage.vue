@@ -452,25 +452,32 @@ function setZoom(z: number) {
 </script>
 
 <template>
-  <div class="relative flex min-w-0 flex-1 flex-col bg-[#0b1220]">
-    <!-- Werkzeugleiste: Snap / Raster -->
-    <div
-      v-if="!preview"
-      class="absolute left-3 top-3 z-10 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#0e1626]/90 p-0.5 text-[11px]"
-    >
-      <button class="rounded px-2 py-1" :class="snap ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_snap_title')" :aria-pressed="snap" @click="snap = !snap">{{ t('canvas_snap') }}</button>
-      <button class="rounded px-2 py-1" :class="showGrid ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_grid_title')" :aria-pressed="showGrid" @click="showGrid = !showGrid">{{ t('canvas_grid') }}</button>
-      <button
-        v-if="ha.entities.length"
-        class="rounded px-2 py-1"
-        :class="reflect ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'"
-        :title="t('canvas_live_title')"
-        :aria-pressed="reflect"
-        @click="reflect = !reflect"
-      >
-        {{ t('canvas_live') }}
-      </button>
-    </div>
+  <div class="relative flex min-w-0 flex-1 flex-col bg-app">
+    <!-- Canvas-Werkzeuge (Snap/Raster/Live, Größe, Zoom): stehen rechts in der Statusleiste -->
+    <Teleport v-if="!preview" to="#statusbar-canvas" defer>
+      <div role="group" :aria-label="t('canvas_tools_label')" class="flex items-center gap-1 text-gray-400">
+        <button class="rounded px-1.5 py-0.5" :class="snap ? 'bg-blue-600 text-white' : 'hover:bg-white/10 hover:text-gray-200'" :title="t('canvas_snap_title')" :aria-pressed="snap" @click="snap = !snap">{{ t('canvas_snap') }}</button>
+        <button class="rounded px-1.5 py-0.5" :class="showGrid ? 'bg-blue-600 text-white' : 'hover:bg-white/10 hover:text-gray-200'" :title="t('canvas_grid_title')" :aria-pressed="showGrid" @click="showGrid = !showGrid">{{ t('canvas_grid') }}</button>
+        <button
+          v-if="ha.entities.length"
+          class="rounded px-1.5 py-0.5"
+          :class="reflect ? 'bg-blue-600 text-white' : 'hover:bg-white/10 hover:text-gray-200'"
+          :title="t('canvas_live_title')"
+          :aria-pressed="reflect"
+          @click="reflect = !reflect"
+        >
+          {{ t('canvas_live') }}
+        </button>
+        <span class="mx-1 text-white/15" aria-hidden="true">·</span>
+        <span>{{ doc.screen.width }} × {{ doc.screen.height }}</span>
+        <span class="mx-1 text-white/15" aria-hidden="true">·</span>
+        <button class="rounded px-1.5 hover:bg-white/10" :aria-label="t('canvas_zoom_out')" :title="t('canvas_zoom_out')" @click="setZoom(zoom - 0.25)">−</button>
+        <span class="w-10 text-center">{{ Math.round(zoom * 100) }}%</span>
+        <button class="rounded px-1.5 hover:bg-white/10" :aria-label="t('canvas_zoom_in')" :title="t('canvas_zoom_in')" @click="setZoom(zoom + 0.25)">＋</button>
+        <button class="rounded px-1.5 hover:bg-white/10" :title="t('canvas_zoom_fit_title')" @click="fitZoom">{{ t('canvas_zoom_fit') }}</button>
+        <button class="rounded px-1.5 hover:bg-white/10" :title="t('canvas_zoom_reset_title')" @click="setZoom(1)">{{ t('canvas_zoom_reset') }}</button>
+      </div>
+    </Teleport>
 
     <!-- Canvas-Fläche -->
     <!-- m-auto statt justify/items-center: zentriert, bleibt aber scrollbar, wenn das Display
@@ -541,18 +548,5 @@ function setZoom(z: number) {
       </div>
     </div>
 
-    <!-- Zoom-Leiste -->
-    <div
-      v-if="!preview"
-      class="flex items-center justify-end gap-2 border-t border-white/10 px-3 py-1.5 text-[11px] text-gray-400"
-    >
-      <span>{{ doc.screen.width }} × {{ doc.screen.height }}</span>
-      <span class="mx-1 text-white/20">|</span>
-      <button class="rounded px-1.5 hover:bg-white/10" :aria-label="t('canvas_zoom_out')" :title="t('canvas_zoom_out')" @click="setZoom(zoom - 0.25)">−</button>
-      <span class="w-10 text-center">{{ Math.round(zoom * 100) }}%</span>
-      <button class="rounded px-1.5 hover:bg-white/10" :aria-label="t('canvas_zoom_in')" :title="t('canvas_zoom_in')" @click="setZoom(zoom + 0.25)">＋</button>
-      <button class="rounded px-1.5 hover:bg-white/10" :title="t('canvas_zoom_fit_title')" @click="fitZoom">{{ t('canvas_zoom_fit') }}</button>
-      <button class="rounded px-1.5 hover:bg-white/10" :title="t('canvas_zoom_reset_title')" @click="setZoom(1)">{{ t('canvas_zoom_reset') }}</button>
-    </div>
   </div>
 </template>

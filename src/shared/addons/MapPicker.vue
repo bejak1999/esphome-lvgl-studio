@@ -269,7 +269,7 @@ async function doSearch() {
       <input
         v-model="search"
         :placeholder="t('map_search')"
-        class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111827] px-2 py-1 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
+        class="min-w-0 flex-1 rounded-lg border border-white/10 bg-field px-2 py-1 text-[11px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
         @keydown.enter.prevent="doSearch"
       />
       <button
@@ -288,7 +288,7 @@ async function doSearch() {
 
     <div
       ref="box"
-      class="relative select-none overflow-hidden rounded-lg border border-white/10 bg-[#111827]"
+      class="relative select-none overflow-hidden rounded-lg border border-white/10 bg-field"
       :style="{ height: HEIGHT + 'px', cursor: 'crosshair' }"
       @mousedown.prevent="onDown"
       @wheel="onWheel"
@@ -353,7 +353,7 @@ async function doSearch() {
           type="number"
           step="0.000001"
           :value="modelValue.lat"
-          class="min-w-0 flex-1 rounded border border-white/10 bg-[#111827] px-1.5 py-0.5 text-[11px] text-gray-100"
+          class="min-w-0 flex-1 rounded border border-white/10 bg-field px-1.5 py-0.5 text-[11px] text-gray-100"
           @change="patch({ lat: Number(($event.target as HTMLInputElement).value) })"
         />
       </label>
@@ -363,7 +363,7 @@ async function doSearch() {
           type="number"
           step="0.000001"
           :value="modelValue.lon"
-          class="min-w-0 flex-1 rounded border border-white/10 bg-[#111827] px-1.5 py-0.5 text-[11px] text-gray-100"
+          class="min-w-0 flex-1 rounded border border-white/10 bg-field px-1.5 py-0.5 text-[11px] text-gray-100"
           @change="patch({ lon: Number(($event.target as HTMLInputElement).value) })"
         />
       </label>

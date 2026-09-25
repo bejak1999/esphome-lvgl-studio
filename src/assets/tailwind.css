@@ -15,11 +15,78 @@
   color-scheme: dark;
 }
 
-/* Kontrast (WCAG AA ≥ 4.5:1 auf den dunklen Flächen #0b1220 … #111827): die Standard-Grautöne
-   500/600 sind dort zu schwach (3,7 bzw. 2,4:1) und werden für Hinweistexte genutzt. */
+/* ── Oberflächen-Themes ────────────────────────────────────────────────────────
+   Alle Farben der UI laufen über diese Variablen: benannte Flächen (app/panel/field) sowie
+   die Familien gray (Text/Linien) und blue (Akzent). Standard = Nord Frost; Graphit und Wald
+   werden per <html data-ui-theme="…"> umgeschaltet (Einstellung „Erscheinungsbild“).
+   Gedämpfter Text (gray-500/600) hält auf allen Flächen WCAG AA (≥ 4.5:1). */
 @theme {
-  --color-gray-500: #8a93a3;
-  --color-gray-600: #7d8595;
+  --color-app: #242933;
+  --color-panel: #2e3440;
+  --color-field: #3b4252;
+  --color-gray-50: #f8f9fb;
+  --color-gray-100: #eceff4;
+  --color-gray-200: #e5e9f0;
+  --color-gray-300: #d8dee9;
+  --color-gray-400: #c3cad6;
+  --color-gray-500: #b2bbca;
+  --color-gray-600: #aeb7c7;
+  --color-gray-700: #4c566a;
+  --color-gray-800: #434c5e;
+  --color-gray-900: #3b4252;
+  --color-gray-950: #2e3440;
+  --color-blue-200: #d7e6f0;
+  --color-blue-300: #b6d4e3;
+  --color-blue-400: #88c0d0;
+  --color-blue-500: #5e81ac;
+  --color-blue-600: #4c6f99;
+  --color-blue-700: #3f5f85;
+}
+
+:root[data-ui-theme='graphite'] {
+  --color-app: #111113;
+  --color-panel: #18181b;
+  --color-field: #1f1f23;
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f4f4f5;
+  --color-gray-200: #e4e4e7;
+  --color-gray-300: #d4d4d8;
+  --color-gray-400: #b4b4bc;
+  --color-gray-500: #9a9aa3;
+  --color-gray-600: #8c8c96;
+  --color-gray-700: #3f3f46;
+  --color-gray-800: #27272a;
+  --color-gray-900: #18181b;
+  --color-gray-950: #09090b;
+  --color-blue-200: #fde68a;
+  --color-blue-300: #fcd34d;
+  --color-blue-400: #fbbf24;
+  --color-blue-500: #d97706;
+  --color-blue-600: #b45309;
+  --color-blue-700: #92400e;
+}
+
+:root[data-ui-theme='forest'] {
+  --color-app: #0b1311;
+  --color-panel: #101b18;
+  --color-field: #15231f;
+  --color-gray-50: #f3f7f5;
+  --color-gray-100: #e6efeb;
+  --color-gray-200: #d5e2dc;
+  --color-gray-300: #bfd0c8;
+  --color-gray-400: #a3b8ae;
+  --color-gray-500: #8ea59a;
+  --color-gray-600: #80968b;
+  --color-gray-700: #2f3f39;
+  --color-gray-800: #22302b;
+  --color-gray-900: #16211d;
+  --color-gray-950: #0b1311;
+  --color-blue-200: #a7f3d0;
+  --color-blue-300: #6ee7b7;
+  --color-blue-400: #2dd4bf;
+  --color-blue-500: #14b8a6;
+  --color-blue-600: #0f766e;
+  --color-blue-700: #115e59;
 }
 
 /* Windows-Kontrastmodus (forced-colors):
@@ -39,7 +106,7 @@
 
 /* Sichtbarer Tastatur-Fokus – auch dort, wo Komponenten `focus:outline-none` setzen. */
 :focus-visible {
-  outline: 2px solid #60a5fa !important;
+  outline: 2px solid var(--color-blue-400) !important;
   outline-offset: 1px;
 }
 
@@ -51,7 +118,7 @@ body,
 }
 
 body {
-  background-color: #0b1220;
-  color: #e5e7eb;
+  background-color: var(--color-app);
+  color: var(--color-gray-200);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }

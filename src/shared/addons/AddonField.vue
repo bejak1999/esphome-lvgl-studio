@@ -206,10 +206,10 @@ function setSize(patch: { width?: number; height?: number }) {
 .addon-num {
   border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #111827;
+  background: var(--color-field);
   padding: 0.25rem 0.5rem;
   font-size: 11px;
-  color: #f3f4f6;
+  color: var(--color-gray-100);
 }
 .addon-input {
   width: 100%;

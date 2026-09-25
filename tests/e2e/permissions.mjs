@@ -41,6 +41,7 @@ for (const b of browsers) {
     await sp.close();
 
     // Bild-URL eines Geräts im Heimnetz → Hinweis mit „Allow" im Eigenschaften-Panel
+    await clickText(ed, 'nav button', /^Widgets$/);
     await clickText(ed, 'button', /^Image$/);
     await sleep(300);
     await ed.evaluate(() => {

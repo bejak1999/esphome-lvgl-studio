@@ -34,6 +34,7 @@ for (const b of browsers) {
   const errors = [];
   try {
     await auditViews(browser, base, ok, errors);
+    await auditUiThemes(browser, base, ok, errors);
     await functional(browser, base, ok, errors, b);
     const unexpected = [...new Set(errors)].filter((e) => !/openrouter|401|10\.255\.255\.1|Failed to load resource/i.test(e));
     ok('keine unerwarteten Console-Fehler/-Warnungen', unexpected.length === 0, unexpected.slice(0, 4).join(' | '));
@@ -94,12 +95,38 @@ async function auditViews(browser, base, ok, errors) {
       await check(ed, `Editor ${m[0]}`);
     }
     await clickText(ed, 'header button', /^Design$/);
-    await clickText(ed, 'header button', /^(Templates|Vorlagen)$/);
+    await clickText(ed, 'nav button', /^(Templates|Vorlagen)$/);
     await sleep(800);
     await check(ed, 'Vorlagen-Dialog');
     await (await keyboardFor(ed)).press('Escape');
     ok(`[${lang}] Escape schließt Dialog`, !(await ed.evaluate(() => !!document.querySelector('[role=dialog]'))));
     await ed.close();
+    await opt.close();
+  }
+}
+
+async function auditUiThemes(browser, base, ok, errors) {
+  for (const th of ['graphite', 'forest']) {
+    const opt = await openPage(browser, base, 'options.html', errors);
+    await setSettings(opt, { esphome: { url: ESPHOME, token: '' }, language: 'en', uiTheme: th });
+    await opt.reload().catch(() => {});
+    await sleep(1000);
+    const check = async (page, view) => {
+      const r = await audit(page, 'en');
+      ok(`[${th}] ${view}: axe ohne Verstöße`, r.axe.length === 0, r.axe.join(' | '));
+    };
+    await check(opt, 'Optionen');
+    const ed = await openPage(browser, base, 'editor.html', errors);
+    await sleep(2500);
+    await ed.select('select[aria-label]', await deviceValue(ed));
+    await sleep(2000);
+    await check(ed, 'Editor');
+    const sp = await openPage(browser, base, 'sidepanel.html', errors);
+    await sleep(2500);
+    await check(sp, 'Sidepanel');
+    await sp.close();
+    await ed.close();
+    await setSettings(opt, { uiTheme: 'nord' });
     await opt.close();
   }
 }
@@ -116,6 +143,9 @@ async function functional(browser, base, ok, errors, b) {
   const text = (p) => p.evaluate(() => document.body.innerText);
   const canvasText = (p) => p.evaluate(() => document.querySelector('[data-lvgl-canvas]')?.innerText ?? '');
   const mode = async (p, re) => { await clickText(p, 'header button', re); await sleep(400); };
+  const section = async (p, re) => { await clickText(p, 'nav button', re); await sleep(250); };
+  const widgets = (p) => section(p, /^(Widgets)$/);
+  const layers = (p) => section(p, /^(Layers|Ebenen)$/);
   const setCode = async (p, value) => {
     await p.evaluate((v) => {
       const ta = document.querySelector('textarea[aria-label="ESPHome YAML"]');
@@ -165,7 +195,7 @@ async function functional(browser, base, ok, errors, b) {
   await opt.select('select', 'de');
   await clickText(opt, 'button', saveBtn);
   await sleep(700);
-  ok('Sprache: Umschalten wirkt live im offenen Editor', /Vorlagen/.test(await ed.evaluate(() => document.querySelector('header').innerText)));
+  ok('Sprache: Umschalten wirkt live im offenen Editor', /Geteilt[\s\S]*Vorschau/.test(await ed.evaluate(() => document.querySelector('header').innerText)));
   ok('Sprache: <html lang> folgt', (await ed.evaluate(() => document.documentElement.lang)) === 'de');
   await opt.select('select', 'en');
   await clickText(opt, 'button', saveBtn);
@@ -183,6 +213,7 @@ async function functional(browser, base, ok, errors, b) {
 
   // Widget aus der Palette, Breite im Panel ändern → YAML
   await mode(ed, /^Design$/);
+  await widgets(ed);
   await clickText(ed, 'button', /^Label$/);
   await sleep(300);
   await mode(ed, /^Split$/);
@@ -214,6 +245,7 @@ async function functional(browser, base, ok, errors, b) {
   }
 
   // Tastatur im Elementbaum
+  await layers(ed);
   const tree = (re) => ed.evaluate((src) => { const b = [...document.querySelectorAll('aside .group > button:first-child')].find((e) => new RegExp(src).test(e.textContent)); b?.focus(); return !!b; }, re);
   const y1 = await yamlOf(ed);
   await tree('Label\\s*·\\s*lbl_2\\b');
@@ -259,9 +291,10 @@ async function functional(browser, base, ok, errors, b) {
 
   // Vorlagen, Export, Verlauf
   await mode(ed, /^Design$/);
+  await layers(ed);
   const count = () => ed.evaluate(() => document.querySelectorAll('aside .group > button:first-child').length);
   const c0 = await count();
-  await clickText(ed, 'header button', /^Templates$/);
+  await clickText(ed, 'nav button', /^Templates$/);
   await sleep(700);
   await ed.evaluate(() => [...document.querySelectorAll('[role=dialog] button')].find((x) => /insert/i.test(x.textContent + x.title))?.click());
   await sleep(500);
@@ -298,6 +331,7 @@ async function functional(browser, base, ok, errors, b) {
   const previewH = await sp.evaluate(() => document.querySelector('[data-lvgl-canvas]').parentElement.getBoundingClientRect().height);
   ok('Sidebar: Vorschau belegt nur ihre skalierte Höhe (Chat bleibt sichtbar)', previewH > 50 && previewH <= 260, `${Math.round(previewH)} px`);
   await front(ed);
+  await widgets(ed);
   await clickText(ed, 'button', /^Button$/);
   await sleep(1200);
   await front(sp);
@@ -352,8 +386,10 @@ async function functional(browser, base, ok, errors, b) {
 
   // Verbindungsabbruch (device-builder startet neu): Anzeige, Auto-Reconnect, Änderungen bleiben
   if (fake) {
+    await widgets(ed);
     await clickText(ed, 'button', /^Label$/);
     await sleep(300);
+    await layers(ed);
     const idOf = () => ed.evaluate(() => (document.querySelector('aside [aria-current=true]')?.textContent ?? '').match(/·\s*(\S+)/)?.[1] ?? '');
     const treeIds = () => ed.evaluate(() => [...document.querySelectorAll('aside .group > button:first-child')].map((b) => b.textContent.match(/·\s*(\S+)/)?.[1]));
     const marker = await idOf();

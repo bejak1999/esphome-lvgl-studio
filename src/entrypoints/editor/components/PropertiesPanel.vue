@@ -225,12 +225,12 @@ const partGroups = computed(() => {
 
 <template>
   <div>
-    <h2 class="mb-1.5 mt-4 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+    <h2 class="mb-2 text-xs font-semibold text-gray-200">
       {{ t('prop_title') }}
     </h2>
 
     <!-- Nichts ausgewählt → Screen-Einstellungen -->
-    <div v-if="!doc.selected" class="space-y-2 rounded-lg border border-white/10 bg-[#111827] p-3">
+    <div v-if="!doc.selected" class="space-y-2 rounded-lg border border-white/10 bg-field p-3">
       <p class="text-[11px] text-gray-500">{{ t('prop_screen') }}</p>
       <label class="block text-[10px] text-gray-400">{{ t('prop_width') }}</label>
       <input
@@ -256,7 +256,7 @@ const partGroups = computed(() => {
     </div>
 
     <!-- Widget ausgewählt -->
-    <div v-else class="space-y-3 rounded-lg border border-white/10 bg-[#111827] p-3">
+    <div v-else class="space-y-3 rounded-lg border border-white/10 bg-field p-3">
       <div class="text-[11px] text-blue-400">{{ typeLabel }} · {{ doc.selected.id }}</div>
 
       <button
@@ -571,10 +571,10 @@ const partGroups = computed(() => {
   width: 100%;
   border-radius: 0.375rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0b1220;
+  background: var(--color-app);
   padding: 0.35rem 0.5rem;
   font-size: 11px;
-  color: #e5e7eb;
+  color: var(--color-gray-200);
   /* MDI zuerst: Icon-Glyphen (z. B. im Text-Feld) rendern als Icon statt als □. */
   font-family: 'Material Design Icons', ui-sans-serif, system-ui, sans-serif;
 }
@@ -582,10 +582,10 @@ const partGroups = computed(() => {
   flex: 1;
   border-radius: 0.375rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0b1220;
+  background: var(--color-app);
   padding: 0.25rem;
   font-size: 11px;
-  color: #d1d5db;
+  color: var(--color-gray-300);
 }
 .prop-btn:hover {
   background: rgba(255, 255, 255, 0.06);

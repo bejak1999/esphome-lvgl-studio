@@ -742,7 +742,7 @@ async function send() {
 </script>
 
 <template>
-  <main class="flex h-full flex-col bg-[#0b1220] text-gray-200">
+  <main class="flex h-full flex-col bg-app text-gray-200">
     <input ref="imageInput" type="file" accept="image/*,application/pdf,text/*,.txt,.md,.csv,.json,.yaml,.yml,.log,.ini,.conf,.xml,.ino,.cpp,.h,.py" multiple class="hidden" @change="onImageChosen" />
 
     <!-- Header -->
@@ -771,7 +771,7 @@ async function send() {
         <select
           v-model="sidebarConfig"
           :aria-label="t('sidepanel_device')"
-          class="min-w-0 flex-1 rounded border border-white/10 bg-[#111827] px-1.5 py-0.5 text-gray-200 focus:outline-none"
+          class="min-w-0 flex-1 rounded border border-white/10 bg-field px-1.5 py-0.5 text-gray-200 focus:outline-none"
           @change="openSidebarDevice(sidebarConfig)"
         >
           <option value="" disabled>{{ t('sidepanel_device') }}</option>
@@ -831,7 +831,7 @@ async function send() {
     <!-- Live-Vorschau -->
     <section class="border-b border-white/10 p-3">
       <div class="mb-1.5 flex items-center gap-2">
-        <div class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('sidepanel_preview') }}</div>
+        <div class="text-xs font-semibold text-gray-300">{{ t('sidepanel_preview') }}</div>
         <!-- Seitenumschalter (LVGL pages) – gilt auch für das, was die KI als „aktuell" sieht. -->
         <div v-if="doc.pages.length > 1" class="flex min-w-0 items-center gap-0.5 overflow-x-auto">
           <button
@@ -940,7 +940,7 @@ async function send() {
       <div ref="feedEl" class="flex-1 space-y-2 overflow-y-auto p-3" @scroll="onFeedScroll">
         <div v-for="(m, i) in feed" :key="i" class="group flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
           <!-- Code-Diff (ein-/ausklappbar) -->
-          <div v-if="m.role === 'diff' && m.diff" class="max-w-[92%] overflow-hidden rounded-lg border border-white/10 bg-[#0b1220]">
+          <div v-if="m.role === 'diff' && m.diff" class="max-w-[92%] overflow-hidden rounded-lg border border-white/10 bg-app">
             <button
               class="flex w-full items-center gap-2 px-2.5 py-1.5 text-[11px] text-gray-300 hover:bg-white/5"
               @click="m.expanded = !m.expanded"
@@ -969,13 +969,13 @@ async function send() {
             class="relative max-w-[85%] rounded-lg px-2.5 py-1.5 text-[12px] leading-snug"
             :class="{
               'bg-blue-600 text-white': m.role === 'user',
-              'border border-white/10 bg-[#111827] text-gray-200': m.role === 'assistant',
+              'border border-white/10 bg-field text-gray-200': m.role === 'assistant',
               'border border-red-500/30 bg-red-950/40 text-red-300': m.role === 'error',
             }"
           >
             <div class="select-text whitespace-pre-wrap break-words">{{ m.text }}</div>
             <button
-              class="absolute -right-1.5 -top-2 rounded border border-white/10 bg-[#0b1220] px-1 py-0.5 text-[9px] text-gray-400 opacity-0 hover:text-white group-hover:opacity-100"
+              class="absolute -right-1.5 -top-2 rounded border border-white/10 bg-app px-1 py-0.5 text-[9px] text-gray-400 opacity-0 hover:text-white group-hover:opacity-100"
               :title="t('common_copy')" :aria-label="t('common_copy')"
               @click="copyText(m.text)"
             >
@@ -996,7 +996,7 @@ async function send() {
           <div
             v-for="(a, i) in attachments"
             :key="i"
-            class="flex items-center gap-1 rounded-md border border-white/10 bg-[#111827] py-0.5 pl-0.5 pr-1.5 text-[10px] text-gray-300"
+            class="flex items-center gap-1 rounded-md border border-white/10 bg-field py-0.5 pl-0.5 pr-1.5 text-[10px] text-gray-300"
           >
             <img v-if="isImage(a)" :src="a.dataUrl" class="h-6 w-6 rounded object-cover" :alt="a.name" />
             <span v-else-if="isPdf(a)" class="flex h-6 w-6 items-center justify-center rounded bg-red-500/20 text-[9px] text-red-300">PDF</span>
@@ -1009,7 +1009,7 @@ async function send() {
           <!-- HA-Entity-Vorschläge (Tippen von „ha:…") -->
           <div
             v-if="acOpen && acMatches.length"
-            class="absolute bottom-full left-9 z-20 mb-1 max-h-56 w-72 overflow-y-auto rounded-lg border border-white/15 bg-[#0e1626] shadow-xl"
+            class="absolute bottom-full left-9 z-20 mb-1 max-h-56 w-72 overflow-y-auto rounded-lg border border-white/15 bg-panel shadow-xl"
           >
             <div class="border-b border-white/10 px-2 py-1 text-[10px] text-gray-500">
               {{ t('sidepanel_ha_entity') }}
@@ -1032,7 +1032,7 @@ async function send() {
             v-model="input"
             rows="2"
             :placeholder="t('sidepanel_placeholder')"
-            class="min-h-9 flex-1 resize-none rounded-lg border border-white/10 bg-[#111827] px-2.5 py-1.5 text-[12px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
+            class="min-h-9 flex-1 resize-none rounded-lg border border-white/10 bg-field px-2.5 py-1.5 text-[12px] text-gray-100 placeholder-gray-500 focus:border-blue-500/60 focus:outline-none"
             @input="onChatInput"
             @keydown="onChatKeydown"
             @blur="acOpen = false"
@@ -1054,7 +1054,7 @@ async function send() {
 
     <!-- Einstellungen direkt in der Sidebar -->
     <div v-if="showSettings" v-dialog="() => (showSettings = false)" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3" @click.self="showSettings = false">
-      <div class="flex max-h-[88vh] w-full max-w-sm flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
+      <div class="flex max-h-[88vh] w-full max-w-sm flex-col overflow-hidden rounded-xl border border-white/10 bg-panel">
         <header class="flex items-center justify-between border-b border-white/10 px-3 py-2">
           <h2 class="text-[12px] font-semibold text-gray-200">{{ t('sidepanel_modal_settings') }}</h2>
           <button class="rounded p-1 text-gray-400 hover:bg-white/5 hover:text-white" :title="t('common_close')" :aria-label="t('common_close')" @click="showSettings = false">✕</button>
@@ -1072,7 +1072,7 @@ async function send() {
       v-dialog="rejectPending"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3"
     >
-      <div class="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0e1626]">
+      <div class="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-white/10 bg-panel">
         <header class="flex items-center gap-2 border-b border-white/10 px-3 py-2 text-[12px] text-gray-200">
           <h2 class="font-normal">{{ t('sidepanel_confirm_change') }}</h2>
           <span class="text-emerald-400">+{{ pendingChange.diff.added }}</span>

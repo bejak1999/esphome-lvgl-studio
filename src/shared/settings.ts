@@ -43,6 +43,8 @@ export interface Settings {
   language: 'en' | 'de';
   /** Farb-Theme, in dem die eingebauten Vorlagen eingefügt werden (core/templates/themes.ts). */
   templateTheme: string;
+  /** Erscheinungsbild der Oberfläche (assets/tailwind.css). */
+  uiTheme: UiTheme;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -59,6 +61,7 @@ export const DEFAULT_SETTINGS: Settings = {
   schema: { version: 'dev' },
   language: 'en',
   templateTheme: DEFAULT_TEMPLATE_THEME,
+  uiTheme: 'nord',
 };
 
 const STORAGE_KEY = 'settings';
@@ -74,14 +77,20 @@ function mergeWithDefaults(saved: Partial<Settings> | undefined): Settings {
     schema: { ...base.schema, ...(saved.schema ?? {}) },
     language: saved.language ?? base.language,
     templateTheme: saved.templateTheme ?? base.templateTheme,
+    uiTheme: UI_THEMES.includes(saved.uiTheme as UiTheme) ? (saved.uiTheme as UiTheme) : base.uiTheme,
   };
 }
 
 let liveSyncAdded = false;
 
-/** `<html lang>` passend zur UI-Sprache (Screenreader, Silbentrennung). */
-function applyDocumentLanguage(lang: string) {
-  if (typeof document !== 'undefined') document.documentElement.lang = lang;
+export const UI_THEMES = ['nord', 'graphite', 'forest'] as const;
+export type UiTheme = (typeof UI_THEMES)[number];
+
+/** `<html lang>` (Screenreader) und `data-ui-theme` (Erscheinungsbild) setzen. */
+function applyDocumentPrefs(s: Settings) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = s.language;
+  document.documentElement.dataset.uiTheme = s.uiTheme;
 }
 
 export const useSettingsStore = defineStore('settings', {
@@ -95,7 +104,7 @@ export const useSettingsStore = defineStore('settings', {
       const res = await browser.storage.local.get(STORAGE_KEY);
       this.settings = mergeWithDefaults(res[STORAGE_KEY] as Partial<Settings> | undefined);
       this.loaded = true;
-      applyDocumentLanguage(this.settings.language);
+      applyDocumentPrefs(this.settings);
 
       // Über Seitengrenzen hinweg synchron halten: Speichert z. B. die Options-Seite
       // einen neuen API-Key, aktualisiert sich die (bereits offene) Sidebar automatisch.
@@ -104,7 +113,7 @@ export const useSettingsStore = defineStore('settings', {
         browser.storage.onChanged.addListener((changes, area) => {
           if (area === 'local' && changes[STORAGE_KEY]) {
             this.settings = mergeWithDefaults(changes[STORAGE_KEY].newValue as Partial<Settings> | undefined);
-            applyDocumentLanguage(this.settings.language);
+            applyDocumentPrefs(this.settings);
           }
         });
       }

@@ -110,35 +110,24 @@ function loadEntities() {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 border-b border-white/10 bg-[#0e1626] px-3 py-1.5 text-[11px]">
-    <!-- ESPHome -->
-    <div class="flex items-center gap-2">
-      <span
-        class="inline-block h-2 w-2 rounded-full"
-        :class="esphome.connected ? 'bg-emerald-400' : esphome.error ? 'bg-red-400' : 'bg-gray-600'"
-      />
-      <span class="text-gray-400">ESPHome</span>
+  <!-- Gerät: steht in der Kopfzeile (Teleport-Ziel #header-device in App.vue) -->
+  <Teleport to="#header-device" defer>
+    <div class="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px]">
       <template v-if="esphome.connected">
-        <span class="text-gray-300">
-          v{{ esphome.esphomeVersion ?? '?' }}
-          <span v-if="esphome.serverInfo?.server_version" class="text-gray-500">· builder {{ esphome.serverInfo.server_version }}</span>
-        </span>
-        <button class="rounded border border-white/10 px-2 py-0.5 text-gray-400 hover:bg-white/5" @click="connectEsphome(true)">{{ t('conn_disconnect') }}</button>
-
         <!-- Gerät folgt der Seitenleiste (docSync). Nur ohne aktives Gerät zur Auswahl anbieten. -->
         <span
           v-if="esphome.currentConfiguration"
-          class="text-gray-300"
+          class="flex min-w-0 items-center gap-1.5 rounded-md bg-field px-2 py-1 text-gray-200"
           :title="t('conn_synced_title')"
         >
-          {{ esphome.currentConfiguration }}
-          <span class="text-gray-600">{{ t('conn_synced') }}</span>
+          <span class="truncate font-medium">{{ esphome.currentConfiguration }}</span>
+          <span class="text-gray-500">{{ t('conn_synced') }}</span>
         </span>
         <select
           v-else
           v-model="selectedConfig"
           :aria-label="t('conn_select_device')"
-          class="rounded border border-white/10 bg-[#111827] px-1.5 py-0.5 text-gray-200 focus:outline-none"
+          class="max-w-64 rounded-md border border-white/10 bg-field px-2 py-1 text-gray-200"
           @change="openDevice"
         >
           <option value="" disabled>{{ t('conn_select_device') }}</option>
@@ -146,14 +135,6 @@ function loadEntities() {
             {{ d.friendly_name || d.name }} ({{ d.configuration }})
           </option>
         </select>
-        <button
-          v-if="esphome.currentConfiguration"
-          class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5"
-          :title="t('conn_save_device_title')"
-          @click="saveDevice"
-        >
-          {{ t('conn_save_device') }}
-        </button>
         <!-- Hinweis auf ungespeicherte Änderungen -->
         <span
           v-if="esphome.currentConfiguration && doc.dirty && !saveStatus"
@@ -166,37 +147,65 @@ function loadEntities() {
         <span v-if="saveStatus" class="text-emerald-400">{{ saveStatus }}</span>
         <button
           v-if="esphome.currentConfiguration"
-          class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5"
+          class="rounded-md bg-blue-600 px-2.5 py-1 font-semibold text-white hover:bg-blue-700"
+          :title="t('conn_save_device_title')"
+          @click="saveDevice"
+        >
+          {{ t('conn_save_device') }}
+        </button>
+        <button
+          v-if="esphome.currentConfiguration"
+          class="rounded-md border border-white/10 px-2 py-1 text-gray-300 hover:bg-white/5"
           :title="t('conn_history_title')"
           @click="emit('history')"
         >
           {{ t('conn_history') }}
         </button>
       </template>
+      <span v-else class="text-gray-500">{{ t('conn_no_device') }}</span>
+    </div>
+  </Teleport>
+
+  <!-- Verbindungsstatus: steht in der Statusleiste unten -->
+  <div class="flex min-w-0 items-center gap-3">
+    <!-- ESPHome -->
+    <div class="flex min-w-0 items-center gap-1.5">
+      <span
+        class="inline-block h-2 w-2 shrink-0 rounded-full"
+        :class="esphome.connected ? 'bg-emerald-400' : esphome.error ? 'bg-red-400' : 'bg-gray-600'"
+      />
+      <span class="text-gray-400">ESPHome</span>
+      <template v-if="esphome.connected">
+        <span class="text-gray-300">
+          v{{ esphome.esphomeVersion ?? '?' }}
+          <span v-if="esphome.serverInfo?.server_version" class="text-gray-500">· builder {{ esphome.serverInfo.server_version }}</span>
+        </span>
+        <button class="rounded px-1.5 py-0.5 text-gray-400 hover:bg-white/10 hover:text-gray-200" @click="connectEsphome(true)">{{ t('conn_disconnect') }}</button>
+      </template>
       <template v-else>
         <button
-          class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5 disabled:opacity-50"
+          class="rounded px-1.5 py-0.5 text-blue-300 hover:bg-white/10 disabled:opacity-50"
           :disabled="esphome.connecting"
           @click="connectEsphome(true)"
         >
           {{ esphome.connecting ? t('conn_connecting') : t('conn_connect') }}
         </button>
-        <span v-if="esphome.error" class="max-w-72 truncate text-red-400" :title="esphome.error">{{ esphome.error }}</span>
+        <span v-if="esphome.error" class="max-w-96 truncate text-red-400" :title="esphome.error">{{ esphome.error }}</span>
       </template>
     </div>
 
-    <span class="text-white/10">|</span>
+    <span class="text-white/15" aria-hidden="true">·</span>
 
     <!-- Home Assistant -->
-    <div class="flex items-center gap-2">
+    <div class="flex min-w-0 items-center gap-1.5">
       <span
-        class="inline-block h-2 w-2 rounded-full"
+        class="inline-block h-2 w-2 shrink-0 rounded-full"
         :class="ha.entities.length ? 'bg-emerald-400' : ha.error ? 'bg-red-400' : 'bg-gray-600'"
       />
       <span class="text-gray-400">Home Assistant</span>
       <span v-if="ha.entities.length" class="text-gray-300">{{ ha.entities.length }} Entities</span>
       <button
-        class="rounded border border-white/10 px-2 py-0.5 text-gray-300 hover:bg-white/5 disabled:opacity-50"
+        class="rounded px-1.5 py-0.5 text-blue-300 hover:bg-white/10 disabled:opacity-50"
         :disabled="ha.loading"
         @click="loadEntities"
       >

@@ -55,7 +55,7 @@ function onBlur() {
 </script>
 
 <template>
-  <div class="code-editor flex min-h-0 flex-1 overflow-hidden bg-[#0b1220] text-[11px] leading-[1.5]">
+  <div class="code-editor flex min-h-0 flex-1 overflow-hidden bg-app text-[11px] leading-[1.5]">
     <div
       ref="gutter"
       class="select-none overflow-hidden py-3 pl-3 pr-2 text-right text-gray-600"
