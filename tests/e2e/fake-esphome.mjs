@@ -10,7 +10,7 @@ import { WebSocketServer } from 'ws';
 
 const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
 
-export function startFakeEsphome(port = 36999) {
+export function startFakeEsphome(port = 36999, { serverVersion = 'fake-1.0' } = {}) {
   const configs = new Map(
     fs.readdirSync(FIXTURES).filter((f) => f.endsWith('.yaml')).map((f) => [f, fs.readFileSync(path.join(FIXTURES, f), 'utf8')]),
   );
@@ -36,7 +36,7 @@ export function startFakeEsphome(port = 36999) {
   });
 
   wss.on('connection', (ws) => {
-    ws.send(JSON.stringify({ server_version: 'fake-1.0', esphome_version: '2026.9.0', ha_addon: false, in_docker: false, requires_auth: false }));
+    ws.send(JSON.stringify({ server_version: serverVersion, esphome_version: '2026.9.0', ha_addon: false, in_docker: false, requires_auth: false }));
     ws.on('message', (raw) => {
       let msg;
       try { msg = JSON.parse(String(raw)); } catch { return; }

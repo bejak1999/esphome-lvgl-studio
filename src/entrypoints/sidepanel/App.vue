@@ -147,9 +147,11 @@ function clearHistory() {
 }
 
 const hasKey = computed(() => settings.loaded && !!settings.settings.ai.apiKey);
+// Vorschau passt in 300×240 px – auch Hochformat-Displays lassen so Platz für den Chat.
 const previewScale = computed(() => {
   const maxW = 300;
-  return Math.min(1, maxW / doc.screen.width);
+  const maxH = 240;
+  return Math.min(1, maxW / doc.screen.width, maxH / doc.screen.height);
 });
 const sidebarConfig = ref('');
 const previewNode = ref<HTMLElement | null>(null);
@@ -847,16 +849,21 @@ async function send() {
         </div>
       </div>
       <div class="flex justify-center overflow-hidden rounded-lg border border-white/10 bg-black/20 p-2">
+        <!-- Sizer in der SKALIERTEN Größe: transform: scale verkleinert nur die Darstellung, nicht
+             den belegten Platz – sonst reservierte die Vorschau die volle Displayhöhe (z. B. 600 px)
+             und schob den Chat aus dem Bild. -->
+        <div class="shrink-0" :style="{ width: doc.screen.width * previewScale + 'px', height: doc.screen.height * previewScale + 'px' }">
         <div
           ref="previewNode"
           data-lvgl-canvas
           class="relative shrink-0 overflow-hidden rounded"
-          :style="{ width: doc.screen.width + 'px', height: doc.screen.height + 'px', backgroundColor: doc.screen.bg_color, transform: `scale(${previewScale})`, transformOrigin: 'top center' }"
+          :style="{ width: doc.screen.width + 'px', height: doc.screen.height + 'px', backgroundColor: doc.screen.bg_color, transform: `scale(${previewScale})`, transformOrigin: 'top left' }"
         >
           <WidgetView v-for="n in doc.screen.children" :key="n.id" :node="n" :selected-id="null" />
           <div v-if="!doc.screen.children.length" class="absolute inset-0 flex items-center justify-center text-xs text-gray-600">
             {{ t('sidepanel_still_empty') }}
           </div>
+        </div>
         </div>
       </div>
     </section>

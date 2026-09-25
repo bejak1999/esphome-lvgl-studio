@@ -289,6 +289,8 @@ async function functional(browser, base, ok, errors, b) {
   await sleep(3500);
   await sp.select('select[aria-label]', dev);
   await sleep(2500);
+  const previewH = await sp.evaluate(() => document.querySelector('[data-lvgl-canvas]').parentElement.getBoundingClientRect().height);
+  ok('Sidebar: Vorschau belegt nur ihre skalierte Höhe (Chat bleibt sichtbar)', previewH > 50 && previewH <= 260, `${Math.round(previewH)} px`);
   await front(ed);
   await clickText(ed, 'button', /^Button$/);
   await sleep(1200);

@@ -19,3 +19,6 @@ screenshots/
 
 # Lokale Geräte-Configs für den Rundlauf-Test (enthalten Schlüssel – nie committen)
 .roundtrip/
+
+# Store-Texte und -Bilder (lokal, nicht Teil der Extension)
+store-assets/
