@@ -458,13 +458,14 @@ function setZoom(z: number) {
       v-if="!preview"
       class="absolute left-3 top-3 z-10 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#0e1626]/90 p-0.5 text-[11px]"
     >
-      <button class="rounded px-2 py-1" :class="snap ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_snap_title')" @click="snap = !snap">{{ t('canvas_snap') }}</button>
-      <button class="rounded px-2 py-1" :class="showGrid ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_grid_title')" @click="showGrid = !showGrid">{{ t('canvas_grid') }}</button>
+      <button class="rounded px-2 py-1" :class="snap ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_snap_title')" :aria-pressed="snap" @click="snap = !snap">{{ t('canvas_snap') }}</button>
+      <button class="rounded px-2 py-1" :class="showGrid ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'" :title="t('canvas_grid_title')" :aria-pressed="showGrid" @click="showGrid = !showGrid">{{ t('canvas_grid') }}</button>
       <button
         v-if="ha.entities.length"
         class="rounded px-2 py-1"
         :class="reflect ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'"
         :title="t('canvas_live_title')"
+        :aria-pressed="reflect"
         @click="reflect = !reflect"
       >
         {{ t('canvas_live') }}

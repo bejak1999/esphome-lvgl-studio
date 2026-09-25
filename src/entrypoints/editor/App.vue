@@ -142,10 +142,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     />
 
     <!-- Kopfzeile -->
-    <header class="flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-3">
+    <!-- flex-wrap: bei schmalem Fenster/hohem Browser-Zoom in eine zweite Zeile umbrechen statt Knöpfe abzuschneiden -->
+    <header class="flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-white/10 px-3 py-1.5">
       <div class="flex items-center gap-2">
         <img src="/icon/128.png" alt="ESPHome LVGL Studio" class="h-7 w-7 shrink-0" />
-        <h1 class="text-sm font-semibold text-white">ESPHome LVGL Studio</h1>
+        <h1 class="whitespace-nowrap text-sm font-semibold text-white">ESPHome LVGL Studio</h1>
         <span class="text-xs text-gray-500">/ Editor</span>
       </div>
 

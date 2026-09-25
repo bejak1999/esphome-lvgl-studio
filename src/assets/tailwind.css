@@ -22,6 +22,21 @@
   --color-gray-600: #7d8595;
 }
 
+/* Windows-Kontrastmodus (forced-colors):
+   - Display-Vorschauen zeigen das Nutzer-Design → echte Farben behalten, sonst ist die
+     Vorschau leer (Karten/Buttons verlieren ihre Hintergründe).
+   - Umschalter zeigen ihren Zustand sonst nur über die Hintergrundfarbe → Systemrahmen. */
+[data-lvgl-canvas] {
+  forced-color-adjust: none;
+}
+@media (forced-colors: active) {
+  [aria-pressed='true'],
+  [aria-current='true'] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
 /* Sichtbarer Tastatur-Fokus – auch dort, wo Komponenten `focus:outline-none` setzen. */
 :focus-visible {
   outline: 2px solid #60a5fa !important;

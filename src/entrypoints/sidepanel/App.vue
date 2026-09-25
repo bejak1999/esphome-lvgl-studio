@@ -828,6 +828,7 @@ async function send() {
       <div class="flex justify-center overflow-hidden rounded-lg border border-white/10 bg-black/20 p-2">
         <div
           ref="previewNode"
+          data-lvgl-canvas
           class="relative shrink-0 overflow-hidden rounded"
           :style="{ width: doc.screen.width + 'px', height: doc.screen.height + 'px', backgroundColor: doc.screen.bg_color, transform: `scale(${previewScale})`, transformOrigin: 'top center' }"
         >
