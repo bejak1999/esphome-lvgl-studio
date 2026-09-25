@@ -27,6 +27,11 @@ export interface Settings {
     baseUrl: string;
     /** Kontextfenster des gewählten Modells in Tokens (für die Füllstandsanzeige). */
     contextLength: number;
+    /**
+     * Wie KI-Änderungen am YAML übernommen werden: 'confirm' = erst Diff zeigen und bestätigen
+     * lassen (Standard), 'auto' = sofort übernehmen.
+     */
+    applyMode: 'confirm' | 'auto';
   };
   /** ESPHome-Schema/Docs */
   schema: {
@@ -46,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
     model: 'google/gemini-2.0-flash-001',
     baseUrl: 'https://openrouter.ai/api/v1',
     contextLength: 0, // 0 = unbekannt, wird beim Laden der Modell-Liste gefüllt
+    applyMode: 'confirm',
   },
   schema: { version: 'dev' },
   language: 'en',
@@ -97,6 +103,17 @@ export const useSettingsStore = defineStore('settings', {
           }
         });
       }
+    },
+    /**
+     * Einzelne Einstellung sofort dauerhaft ändern, OHNE andere (evtl. noch nicht bestätigte)
+     * Eingaben aus einem offenen Einstellungsformular mitzuspeichern.
+     */
+    async saveApplyMode(mode: Settings['ai']['applyMode']) {
+      this.settings.ai.applyMode = mode;
+      const res = await browser.storage.local.get(STORAGE_KEY);
+      const stored = mergeWithDefaults(res[STORAGE_KEY] as Partial<Settings> | undefined);
+      stored.ai.applyMode = mode;
+      await browser.storage.local.set({ [STORAGE_KEY]: stored });
     },
     async save() {
       // Plain-Objekt (kein Proxy) in den Storage schreiben.

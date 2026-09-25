@@ -351,7 +351,14 @@ async function compileWithAutofix() {
 const showSettings = ref(false);
 
 // Anwende-Modus: 'auto' übernimmt sofort, 'confirm' fragt vorher mit Diff-Popup.
-const applyMode = ref<'auto' | 'confirm'>('auto');
+// Übernahme-Modus für KI-Änderungen – in den Einstellungen gespeichert (Standard: bestätigen),
+// damit eine Umstellung auf „Auto" einen Neustart übersteht.
+const applyMode = computed<'auto' | 'confirm'>({
+  get: () => settings.settings.ai.applyMode ?? 'confirm',
+  set: (v) => {
+    settings.saveApplyMode(v);
+  },
+});
 const pendingChange = ref<{ yaml: string; diff: LineDiff; resolve: (ok: boolean) => void } | null>(null);
 
 /** Übernimmt YAML der KI und protokolliert den Diff im Chat. */
@@ -861,6 +868,7 @@ async function send() {
             class="rounded px-1.5 py-0.5"
             :class="applyMode === 'auto' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'"
             :title="t('sidepanel_auto_title')"
+            :aria-pressed="applyMode === 'auto'"
             @click="applyMode = 'auto'"
           >
             {{ t('sidepanel_auto') }}
@@ -869,6 +877,7 @@ async function send() {
             class="rounded px-1.5 py-0.5"
             :class="applyMode === 'confirm' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'"
             :title="t('sidepanel_confirm_title')"
+            :aria-pressed="applyMode === 'confirm'"
             @click="applyMode = 'confirm'"
           >
             {{ t('sidepanel_confirm') }}
