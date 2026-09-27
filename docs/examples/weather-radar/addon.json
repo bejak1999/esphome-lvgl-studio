@@ -1,0 +1,419 @@
+{
+  "$schema": "../EspHomeTool/docs/addon-manifest.schema.json",
+  "id": "benni.weather-map",
+  "name": "Wetterkarte",
+  "version": "1.0.0",
+  "api": 1,
+  "icon": "🗺️",
+  "author": "ESPHome LVGL Studio",
+  "description": "Punkt auf der Karte wählen – das Display zeigt den Kartenausschnitt, optional mit animiertem DWD-Niederschlagsradar, Uhr und Fortschrittsbalken.",
+  "homepage": "https://www.geoapify.com/static-maps-api/",
+
+  "settings": [
+    {
+      "key": "provider",
+      "kind": "select",
+      "label": "Kartenanbieter",
+      "default": "geoapify",
+      "options": [
+        { "value": "geoapify", "label": "Geoapify (kostenloser API-Key)" },
+        { "value": "osm-de", "label": "OpenStreetMap DE (ohne Schlüssel, ohne Garantie)" }
+      ]
+    },
+    {
+      "key": "geoapifyKey",
+      "kind": "text",
+      "label": "Geoapify API-Key",
+      "password": true,
+      "visibleIf": { "key": "settings.provider", "equals": "geoapify" },
+      "help": "Kostenlos auf geoapify.com anlegen (Projekt → API-Key). Derselbe Key liefert die Kacheln der Vorschaukarte und das Bild auf dem Gerät."
+    }
+  ],
+
+  "fields": [
+    {
+      "key": "location",
+      "kind": "map",
+      "label": "Standort",
+      "spanKm": { "min": 2, "max": 300, "default": 30 },
+      "aspectFrom": "config.size",
+      "tileUrl": "{{ out.tileUrl }}",
+      "tileAttribution": "{{ out.tileAttribution }}",
+      "help": "Klick setzt den Mittelpunkt. Der blaue Rahmen zeigt den Ausschnitt, den das Gerät später holt."
+    },
+    {
+      "key": "size",
+      "kind": "size",
+      "label": "Größe",
+      "default": { "width": 240, "height": 240 },
+      "presets": ["120x120", "135x240", "160x120", "240x240", "320x240", "480x320"],
+      "help": "Klein halten: das Bild liegt komplett im RAM des ESP32."
+    },
+    {
+      "key": "interval",
+      "kind": "slider",
+      "label": "Karte aktualisieren",
+      "min": 1,
+      "max": 120,
+      "step": 1,
+      "unit": "min",
+      "default": 30,
+      "help": "Die Karte selbst ändert sich kaum – ein großes Intervall spart Daten und RAM."
+    },
+    { "key": "markerColor", "kind": "color", "label": "Markerfarbe", "default": "#ff0000" },
+
+    {
+      "key": "radarNote",
+      "kind": "note",
+      "label": "Regenradar",
+      "help": "DWD-Niederschlagsradar (nur Deutschland) als transparente Ebene über der Karte."
+    },
+    { "key": "radar", "kind": "checkbox", "label": "Radar überlagern", "default": true },
+    {
+      "key": "frames",
+      "kind": "slider",
+      "label": "Anzahl Bilder (Animation)",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "default": 6,
+      "visibleIf": { "key": "radar", "truthy": true },
+      "help": "1 = nur das aktuelle Bild ohne Animation. Mehr Bilder laufen in einer Schleife, älteste Aufnahme zuerst."
+    },
+    {
+      "key": "frameStep",
+      "kind": "slider",
+      "label": "Abstand der Bilder",
+      "min": 5,
+      "max": 60,
+      "step": 5,
+      "unit": "min",
+      "default": 5,
+      "visibleIf": { "key": "radar", "truthy": true },
+      "help": "Das DWD-Radar veröffentlicht alle 5 Minuten ein Bild."
+    },
+    {
+      "key": "frameSeconds",
+      "kind": "slider",
+      "label": "Anzeigedauer je Bild",
+      "min": 2,
+      "max": 30,
+      "step": 1,
+      "unit": "s",
+      "default": 5,
+      "visibleIf": { "key": "radar", "truthy": true },
+      "help": "Jedes Bild wird frisch geladen und dekodiert – unter ~4 s wird die Anzeige auf dem ESP32 ruckelig."
+    },
+
+    {
+      "key": "barNote",
+      "kind": "note",
+      "label": "Fortschrittsbalken",
+      "help": "Zeigt, an welcher Stelle der Radar-Schleife die Anzeige gerade steht (nur bei mehreren Bildern)."
+    },
+    {
+      "key": "bar",
+      "kind": "checkbox",
+      "label": "Balken anzeigen",
+      "default": true,
+      "visibleIf": { "key": "radar", "truthy": true }
+    },
+    {
+      "key": "barColor",
+      "kind": "color",
+      "label": "Balkenfarbe",
+      "default": "#38bdf8",
+      "visibleIf": { "key": "bar", "truthy": true }
+    },
+    {
+      "key": "barHeight",
+      "kind": "number",
+      "label": "Balkenhöhe",
+      "min": 2,
+      "max": 20,
+      "default": 6,
+      "visibleIf": { "key": "bar", "truthy": true }
+    },
+
+    {
+      "key": "clockNote",
+      "kind": "note",
+      "label": "Uhr",
+      "help": "Zeit per SNTP aus dem Netz; das Label aktualisiert sich selbst."
+    },
+    { "key": "clock", "kind": "checkbox", "label": "Uhr anzeigen", "default": true },
+    {
+      "key": "clockFormat",
+      "kind": "select",
+      "label": "Format",
+      "default": "%H:%M",
+      "visibleIf": { "key": "clock", "truthy": true },
+      "options": [
+        { "value": "%H:%M", "label": "14:05" },
+        { "value": "%H:%M:%S", "label": "14:05:09" },
+        { "value": "%d.%m. %H:%M", "label": "26.07. 14:05" }
+      ]
+    },
+    {
+      "key": "clockPos",
+      "kind": "select",
+      "label": "Position",
+      "default": "top-left",
+      "visibleIf": { "key": "clock", "truthy": true },
+      "options": [
+        { "value": "top-left", "label": "oben links" },
+        { "value": "top-right", "label": "oben rechts" },
+        { "value": "bottom-left", "label": "unten links" },
+        { "value": "bottom-right", "label": "unten rechts" }
+      ]
+    },
+    {
+      "key": "clockSize",
+      "kind": "slider",
+      "label": "Schriftgröße",
+      "min": 10,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "default": 18,
+      "visibleIf": { "key": "clock", "truthy": true }
+    },
+    {
+      "key": "clockColor",
+      "kind": "color",
+      "label": "Textfarbe",
+      "default": "#ffffff",
+      "visibleIf": { "key": "clock", "truthy": true }
+    },
+    {
+      "key": "timezone",
+      "kind": "text",
+      "label": "Zeitzone",
+      "default": "Europe/Berlin",
+      "visibleIf": { "key": "clock", "truthy": true },
+      "help": "IANA-Name. Leer lassen, wenn im YAML schon eine Zeitzone gesetzt ist."
+    },
+
+    {
+      "key": "ramNote",
+      "kind": "note",
+      "label": "Speicher (ohne PSRAM wichtig)",
+      "help": "Karte und Regenradar sind zwei getrennte Online-Bilder. ESPHome reserviert für jedes einen festen Download-Puffer SCHON BEIM START – vor Display und WLAN. Auf einem ESP32 OHNE PSRAM (~300 KB RAM) kann das allein den Speicher für den Display-Puffer knapp machen (Boot-Loop mit 'Could not allocate buffer for display!'). Betrifft nur, WIE geladen wird, nicht wie das Bild aussieht – kleinere Werte laden minimal langsamer."
+    },
+    {
+      "key": "downloadBuffer",
+      "kind": "slider",
+      "label": "Download-Puffer je Bild",
+      "min": 4096,
+      "max": 65536,
+      "step": 4096,
+      "unit": " B",
+      "default": 16384,
+      "help": "Ohne PSRAM klein halten (z. B. 8192–16384). Senkt NUR den Streaming-Puffer – das fertig dekodierte Bild (Breite×Höhe×2 Byte) bleibt davon unberührt; dafür ist die 'Größe' oben der Hebel."
+    }
+  ],
+
+  "outputs": [
+    {
+      "key": "tileUrl",
+      "kind": "switch",
+      "on": "settings.provider",
+      "cases": {
+        "geoapify": "https://maps.geoapify.com/v1/tile/osm-bright-smooth/{z}/{x}/{y}.png?apiKey={{ settings.geoapifyKey }}"
+      },
+      "fallback": ""
+    },
+    {
+      "key": "tileAttribution",
+      "kind": "switch",
+      "on": "settings.provider",
+      "cases": { "geoapify": "© OpenStreetMap · © Geoapify" },
+      "fallback": "© OpenStreetMap"
+    },
+
+    {
+      "key": "bbox",
+      "kind": "bbox",
+      "lat": "{{ config.location.lat }}",
+      "lon": "{{ config.location.lon }}",
+      "spanKm": "{{ config.location.spanKm }}",
+      "width": "{{ config.size.width }}",
+      "height": "{{ config.size.height }}"
+    },
+    {
+      "key": "bboxWms",
+      "kind": "bbox",
+      "order": "swne",
+      "lat": "{{ config.location.lat }}",
+      "lon": "{{ config.location.lon }}",
+      "spanKm": "{{ config.location.spanKm }}",
+      "width": "{{ config.size.width }}",
+      "height": "{{ config.size.height }}"
+    },
+
+    {
+      "key": "mapUrl",
+      "kind": "switch",
+      "on": "settings.provider",
+      "cases": {
+        "geoapify": "https://maps.geoapify.com/v1/staticmap?style=osm-bright&format=png&area=rect:{{ out.bbox }}&width={{ config.size.width }}&height={{ config.size.height }}&marker=lonlat:{{ config.location.lon | fixed:6 }},{{ config.location.lat | fixed:6 }};color:%23{{ config.markerColor | nohash }};size:small&apiKey={{ settings.geoapifyKey }}",
+        "osm-de": "https://staticmap.openstreetmap.de/staticmap.php?center={{ config.location.lat | fixed:6 }},{{ config.location.lon | fixed:6 }}&zoom={{ config.location.zoom }}&size={{ config.size.width }}x{{ config.size.height }}&markers={{ config.location.lat | fixed:6 }},{{ config.location.lon | fixed:6 }},red-pushpin"
+      }
+    },
+    {
+      "key": "radarUrl",
+      "kind": "template",
+      "value": "https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers=dwd:Niederschlagsradar&styles=&format=image/png&transparent=true&crs=EPSG:4326&width={{ config.size.width }}&height={{ config.size.height }}&bbox={{ out.bboxWms }}"
+    },
+
+    { "key": "mapIntervalS", "kind": "calc", "expr": "{{ config.interval }} * 60" },
+    { "key": "frameStepS", "kind": "calc", "expr": "{{ config.frameStep }} * 60" },
+    { "key": "lastFrame", "kind": "calc", "expr": "max(0, {{ config.frames }} - 1)" },
+    { "key": "radarIntervalS", "kind": "calc", "expr": "max(300, {{ out.frameStepS }})" },
+
+    {
+      "key": "showAnim",
+      "kind": "switch",
+      "on": "config.radar",
+      "cases": { "true": "{{ out.lastFrame }}" },
+      "fallback": "0"
+    },
+    {
+      "key": "radarInterval",
+      "kind": "switch",
+      "on": "out.showAnim",
+      "cases": { "0": "{{ out.radarIntervalS }}s" },
+      "fallback": "never"
+    },
+    {
+      "key": "showBar",
+      "kind": "switch",
+      "on": "out.showAnim",
+      "cases": { "0": "" },
+      "fallback": "{{ config.bar }}"
+    },
+    {
+      "key": "clockTrigger",
+      "kind": "switch",
+      "on": "config.clockFormat",
+      "cases": { "%H:%M:%S": "*" },
+      "fallback": "0"
+    },
+    {
+      "key": "needTime",
+      "kind": "switch",
+      "on": "config.clock",
+      "cases": { "true": "1" },
+      "fallback": "{{ out.showAnim }}"
+    },
+
+    { "key": "barWidth", "kind": "calc", "expr": "max(20, {{ config.size.width }} - 8)" },
+    { "key": "barY", "kind": "calc", "expr": "{{ config.size.height }} - {{ config.barHeight }} - 4" },
+    { "key": "clockW", "kind": "calc", "expr": "round({{ config.clockSize }} * 3.4)" },
+    { "key": "clockH", "kind": "calc", "expr": "round({{ config.clockSize }} * 1.6)" },
+    { "key": "clockRightX", "kind": "calc", "expr": "max(0, {{ config.size.width }} - {{ out.clockW }} - 4)" },
+    { "key": "clockBottomY", "kind": "calc", "expr": "max(0, {{ config.size.height }} - {{ out.clockH }} - 4)" },
+    {
+      "key": "clockX",
+      "kind": "switch",
+      "on": "config.clockPos",
+      "cases": {
+        "top-right": "{{ out.clockRightX }}",
+        "bottom-right": "{{ out.clockRightX }}"
+      },
+      "fallback": "4"
+    },
+    {
+      "key": "clockY",
+      "kind": "switch",
+      "on": "config.clockPos",
+      "cases": {
+        "bottom-left": "{{ out.clockBottomY }}",
+        "bottom-right": "{{ out.clockBottomY }}"
+      },
+      "fallback": "4"
+    }
+  ],
+
+  "widgets": [
+    {
+      "key": "map",
+      "type": "image",
+      "name": "Karte",
+      "width": "{{ config.size.width }}",
+      "height": "{{ config.size.height }}",
+      "props": {
+        "img_source": "online",
+        "img_url": "{{ out.mapUrl }}",
+        "img_format": "PNG",
+        "img_type": "RGB565",
+        "img_update_interval": "{{ out.mapIntervalS }}s",
+        "img_resize": "{{ config.size.width }}x{{ config.size.height }}",
+        "img_buffer_size": "{{ config.downloadBuffer }}",
+        "radius": 6,
+        "bg_color": "#1f2937"
+      }
+    },
+    {
+      "key": "radar",
+      "type": "image",
+      "name": "Regenradar",
+      "visibleIf": { "key": "radar", "truthy": true },
+      "width": "{{ config.size.width }}",
+      "height": "{{ config.size.height }}",
+      "props": {
+        "img_source": "online",
+        "img_url": "{{ out.radarUrl }}",
+        "img_format": "PNG",
+        "img_type": "RGB565",
+        "img_transparency": "alpha_channel",
+        "img_update_interval": "{{ out.radarInterval }}",
+        "img_resize": "{{ config.size.width }}x{{ config.size.height }}",
+        "img_buffer_size": "{{ config.downloadBuffer }}"
+      }
+    },
+    {
+      "key": "bar",
+      "type": "bar",
+      "name": "Radar-Fortschritt",
+      "visibleIf": { "key": "out.showBar", "truthy": true },
+      "x": 4,
+      "y": "{{ out.barY }}",
+      "width": "{{ out.barWidth }}",
+      "height": "{{ config.barHeight }}",
+      "props": {
+        "value": 0,
+        "min_value": 0,
+        "max_value": "{{ out.lastFrame }}",
+        "color": "{{ config.barColor }}",
+        "bg_color": "#111827",
+        "bg_opa": 60,
+        "radius": 3
+      }
+    },
+    {
+      "key": "clock",
+      "type": "label",
+      "name": "Uhr",
+      "visibleIf": { "key": "clock", "truthy": true },
+      "x": "{{ out.clockX }}",
+      "y": "{{ out.clockY }}",
+      "width": "{{ out.clockW }}",
+      "height": "{{ out.clockH }}",
+      "props": {
+        "text": "--:--",
+        "text_color": "{{ config.clockColor }}",
+        "font_size": "{{ config.clockSize }}",
+        "text_align": "CENTER",
+        "bg_color": "#000000",
+        "bg_opa": 45,
+        "radius": 4,
+        "pad_all": 2
+      }
+    }
+  ],
+
+  "yaml": "http_request:\n  timeout: 20s\n{{#if out.needTime}}time:\n  - platform: sntp\n    id: addon_{{ iid }}_time\n{{#if config.timezone}}    timezone: \"{{ config.timezone }}\"\n{{/if}}{{#if config.clock}}    on_time:\n      - seconds: \"{{ out.clockTrigger }}\"\n        then:\n          - lvgl.label.update:\n              id: {{ widgets.clock }}\n              text: !lambda |-\n                return id(addon_{{ iid }}_time).now().strftime(\"{{ config.clockFormat }}\");\n{{/if}}{{/if}}{{#if out.showAnim}}globals:\n  - id: addon_{{ iid }}_frame\n    type: int\n    restore_value: false\n    initial_value: \"0\"\ninterval:\n  - interval: {{ config.frameSeconds }}s\n    id: addon_{{ iid }}_anim\n    then:\n      - online_image.set_url:\n          id: {{ widgets.radar }}__img\n          url: !lambda |-\n            auto now = id(addon_{{ iid }}_time).now();\n            if (!now.is_valid()) return std::string(\"{{ out.radarUrl }}\");\n            const int frame = id(addon_{{ iid }}_frame);\n            // Aelteste Aufnahme zuerst; das DWD-Raster liegt auf vollen 5 Minuten.\n            time_t ts = now.timestamp - (time_t)({{ out.lastFrame }} - frame) * {{ out.frameStepS }};\n            ts -= ts % 300;\n            struct tm utc;\n            gmtime_r(&ts, &utc);\n            char stamp[40];\n            strftime(stamp, sizeof(stamp), \"%Y-%m-%dT%H:%M:%S.000Z\", &utc);\n            return std::string(\"{{ out.radarUrl }}\") + \"&time=\" + stamp;\n      - lambda: |-\n          id(addon_{{ iid }}_frame) = (id(addon_{{ iid }}_frame) + 1) % {{ config.frames }};\n{{#if out.showBar}}      - lvgl.bar.update:\n          id: {{ widgets.bar }}\n          value: !lambda |-\n            return id(addon_{{ iid }}_frame);\n{{/if}}{{/if}}",
+
+  "preview": { "kind": "image", "url": "{{ out.mapUrl }}" }
+}

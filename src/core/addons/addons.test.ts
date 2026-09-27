@@ -44,21 +44,17 @@ function findAny(doc: ReturnType<typeof useDocumentStore>, id: string): WidgetNo
 }
 
 /**
- * Die beiden echten Addons werden NICHT mit der Extension ausgeliefert – sie liegen als
- * eigenständige Manifeste neben dem Projekt (`../addonWeather`, `../addonFrigate`).
- * Sind sie vorhanden, werden sie hier mitgeprüft; sonst überspringen wir diese Tests,
- * damit ein Klon ohne die Ordner trotzdem grün ist.
+ * Die beiden fertigen Addons werden NICHT mit der Extension ausgeliefert – sie liegen als
+ * eigenständige Manifeste in `docs/examples/` und werden per „Von URL" installiert.
  */
-const NEIGHBOUR_DIR = fileURLToPath(new URL('../../../../', import.meta.url));
+const EXAMPLES_DIR = fileURLToPath(new URL('../../../docs/examples/', import.meta.url));
 
-function loadNeighbourAddon(folder: string): AddonManifest | null {
-  const p = join(NEIGHBOUR_DIR, folder, 'addon.json');
-  if (!existsSync(p)) return null;
-  return JSON.parse(readFileSync(p, 'utf8')) as AddonManifest;
+function loadExampleAddon(folder: string): AddonManifest {
+  return JSON.parse(readFileSync(join(EXAMPLES_DIR, folder, 'addon.json'), 'utf8')) as AddonManifest;
 }
 
-const WEATHER = loadNeighbourAddon('addonWeather');
-const FRIGATE = loadNeighbourAddon('addonFrigate');
+const WEATHER = loadExampleAddon('weather-radar');
+const FRIGATE = loadExampleAddon('frigate-camera');
 
 /** Kleines Manifest für die Mechanik-Tests (unabhängig von den echten Addons). */
 const DEMO: AddonManifest = {
@@ -712,13 +708,13 @@ describe('document + addons', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Die ausgelieferten Addons (liegen neben dem Projekt, nicht in der Extension)
+// Die Beispiel-Addons in docs/examples (nicht Teil der Extension)
 // ---------------------------------------------------------------------------
 
-describe.skipIf(!WEATHER)('addonWeather', () => {
+describe('Beispiel-Addon weather-radar', () => {
   const M = WEATHER as AddonManifest;
   const cfg = (extra: Record<string, unknown> = {}) => ({
-    location: { lat: 48.0474, lon: 11.66, zoom: 10, spanKm: 30 },
+    location: { lat: 48.1374, lon: 11.5755, zoom: 10, spanKm: 30 },
     size: { width: 240, height: 240 },
     ...extra,
   });
@@ -810,7 +806,7 @@ describe.skipIf(!WEATHER)('addonWeather', () => {
   });
 });
 
-describe.skipIf(!FRIGATE)('addonFrigate', () => {
+describe('Beispiel-Addon frigate-camera', () => {
   const M = FRIGATE as AddonManifest;
 
   it('ist ein gültiges Manifest', () => {

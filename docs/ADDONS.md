@@ -92,12 +92,13 @@ installieren*. Danach steht „Uhrzeit-Label" links im Editor unter **Addons**.
 ## 3. Installieren und verwalten
 
 **Es ist nichts vorinstalliert.** Auch die beiden fertigen Addons liegen als eigenständige
-Manifeste neben dem Projekt und werden wie jedes andere installiert:
+Manifeste in [`docs/examples`](examples) und werden wie jedes andere installiert – am
+einfachsten per **Von URL** mit der angegebenen Adresse:
 
-| Addon | Datei |
-| --- | --- |
-| Wetterkarte (Kartenpunkt, Regenradar-Animation, Uhr, Balken) | `../addonWeather/addon.json` |
-| Frigate-Kamera (Kamera-Dropdown, Overlays) | `../addonFrigate/addon.json` |
+| Addon | Datei | Adresse für „Von URL“ |
+| --- | --- | --- |
+| Wetterkarte (Kartenpunkt, Regenradar-Animation, Uhr, Balken) | [`weather-radar/addon.json`](examples/weather-radar/addon.json) | `https://raw.githubusercontent.com/bejak1999/esphome-lvgl-studio/main/docs/examples/weather-radar/addon.json` |
+| Frigate-Kamera (Kamera-Dropdown, Overlays) | [`frigate-camera/addon.json`](examples/frigate-camera/addon.json) | `https://raw.githubusercontent.com/bejak1999/esphome-lvgl-studio/main/docs/examples/frigate-camera/addon.json` |
 
 Einstellungen (⚙ im Editor oder in der Sidebar) → Abschnitt **Addons**:
 
@@ -544,12 +545,12 @@ löscht die Widgets von Hand; beim nächsten „Übernehmen" legt das Addon sie 
 Die beiden ausgelieferten Addons liegen neben dem Projekt und sind die Referenz zum
 Abschauen:
 
-- **Wetterkarte** – `../addonWeather/addon.json`: `map`-Feld mit eigener Kachelquelle, zwei
+- **Wetterkarte** – [`examples/weather-radar/addon.json`](examples/weather-radar/addon.json): `map`-Feld mit eigener Kachelquelle, zwei
   `bbox`-Outputs (Static-Map- und WMS-Achsenreihenfolge), `switch` für zwei Anbieter,
   zuschaltbares Radar-Overlay mit Alpha-Kanal, Uhr (`time:` + `on_time`) und
   Radar-Animation (`globals:` + `interval:` + `online_image.set_url` mit Lambda) im
   `yaml`-Fragment, gesteuert über bedingte Blöcke.
-- **Frigate-Kamera** – `../addonFrigate/addon.json`: `remote-select` gegen `/api/config`,
+- **Frigate-Kamera** – [`examples/frigate-camera/addon.json`](examples/frigate-camera/addon.json): `remote-select` gegen `/api/config`,
   `size` mit Presets, Overlay-Schalter, die als URL-Parameter eingebaut werden.
 
 Zum Kopieren als eigene Dateien:

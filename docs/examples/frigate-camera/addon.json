@@ -1,0 +1,139 @@
+{
+  "$schema": "../EspHomeTool/docs/addon-manifest.schema.json",
+  "id": "benni.frigate-camera",
+  "name": "Frigate-Kamera",
+  "version": "1.0.0",
+  "api": 1,
+  "icon": "📷",
+  "author": "ESPHome LVGL Studio",
+  "description": "Zeigt alle paar Sekunden ein aktuelles Standbild einer Frigate-Kamera – Kamera per Dropdown, Größe, Overlays (Zeitstempel, Boxen, Bewegung, Zonen).",
+  "homepage": "https://docs.frigate.video/integrations/api/",
+
+  "settings": [
+    {
+      "key": "url",
+      "kind": "text",
+      "label": "Frigate-Basis-URL",
+      "default": "",
+      "placeholder": "http://frigate.local:5000",
+      "help": "Ohne Schrägstrich am Ende. Das Gerät ruft diese Adresse selbst auf – sie muss aus dem WLAN des ESP32 erreichbar sein (kein localhost)."
+    }
+  ],
+
+  "fields": [
+    {
+      "key": "camera",
+      "kind": "remote-select",
+      "label": "Kamera",
+      "url": "{{ settings.url }}/api/config",
+      "itemsPath": "cameras",
+      "help": "Liste kommt live aus Frigate. Kein Zugriff? Name von Hand eintragen."
+    },
+    {
+      "key": "size",
+      "kind": "size",
+      "label": "Größe",
+      "default": { "width": 240, "height": 135 },
+      "presets": ["160x90", "240x135", "320x180", "320x240", "480x270"],
+      "help": "Frigate skaliert serverseitig auf diese Höhe – kleiner heißt weniger RAM und schnellere Updates."
+    },
+    {
+      "key": "interval",
+      "kind": "slider",
+      "label": "Aktualisierung",
+      "min": 2,
+      "max": 60,
+      "step": 1,
+      "unit": "s",
+      "default": 5
+    },
+    {
+      "key": "quality",
+      "kind": "slider",
+      "label": "JPEG-Qualität",
+      "min": 30,
+      "max": 100,
+      "step": 5,
+      "default": 70,
+      "help": "Niedriger = kleineres Bild = schnellerer Download."
+    },
+    { "key": "radius", "kind": "number", "label": "Ecken-Radius", "min": 0, "max": 32, "default": 6 },
+
+    {
+      "key": "overlayNote",
+      "kind": "note",
+      "label": "Overlays",
+      "help": "Frigate zeichnet diese Elemente direkt ins Bild (Parameter der latest.jpg-API)."
+    },
+    { "key": "timestamp", "kind": "checkbox", "label": "Zeitstempel", "default": false },
+    { "key": "bbox", "kind": "checkbox", "label": "Erkannte Objekte (Boxen)", "default": false },
+    { "key": "motion", "kind": "checkbox", "label": "Bewegungsbereiche", "default": false },
+    { "key": "regions", "kind": "checkbox", "label": "Zonen/Regionen", "default": false },
+
+    {
+      "key": "caption",
+      "kind": "checkbox",
+      "label": "Kameranamen darunter anzeigen",
+      "default": false
+    },
+    {
+      "key": "captionColor",
+      "kind": "color",
+      "label": "Textfarbe",
+      "default": "#e5e7eb",
+      "visibleIf": { "key": "caption", "truthy": true }
+    }
+  ],
+
+  "outputs": [
+    {
+      "key": "query",
+      "kind": "template",
+      "value": "?h={{ config.size.height }}&quality={{ config.quality }}{{#if config.timestamp}}&timestamp=1{{/if}}{{#if config.bbox}}&bbox=1{{/if}}{{#if config.motion}}&motion=1{{/if}}{{#if config.regions}}&regions=1{{/if}}"
+    },
+    {
+      "key": "snapshot",
+      "kind": "template",
+      "value": "{{ settings.url }}/api/{{ config.camera }}/latest.jpg{{ out.query }}"
+    },
+    { "key": "captionY", "kind": "calc", "expr": "{{ config.size.height }} + 6" }
+  ],
+
+  "widgets": [
+    {
+      "key": "cam",
+      "type": "image",
+      "name": "Frigate {{ config.camera }}",
+      "width": "{{ config.size.width }}",
+      "height": "{{ config.size.height }}",
+      "props": {
+        "img_source": "online",
+        "img_url": "{{ out.snapshot }}",
+        "img_format": "JPEG",
+        "img_type": "RGB565",
+        "img_update_interval": "{{ config.interval }}s",
+        "img_resize": "{{ config.size.width }}x{{ config.size.height }}",
+        "radius": "{{ config.radius }}",
+        "bg_color": "#111827"
+      }
+    },
+    {
+      "key": "caption",
+      "type": "label",
+      "visibleIf": { "key": "caption", "truthy": true },
+      "y": "{{ out.captionY }}",
+      "width": "{{ config.size.width }}",
+      "height": 20,
+      "props": {
+        "text": "{{ config.camera }}",
+        "text_color": "{{ config.captionColor }}",
+        "font_size": 14,
+        "text_align": "CENTER"
+      }
+    }
+  ],
+
+  "yaml": "http_request:\n  timeout: 10s\n",
+
+  "preview": { "kind": "image", "url": "{{ out.snapshot }}", "interval": 5 }
+}

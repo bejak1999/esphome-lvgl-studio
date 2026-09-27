@@ -59,7 +59,8 @@ Equipped with an optional **AI Agent** (any model available on OpenRouter, with 
 
 ### 🧩 Declarative JSON Addon System
 - **Pure JSON Addons**: Extend the editor with custom widgets, dynamic cards, and complex integrations without writing code.
-- **Examples**: Small starter manifests in [docs/examples](docs/examples). Nothing is pre-installed – addons are installed from a URL, a file or pasted JSON.
+- **Ready-made Addons**: [Weather radar map](docs/examples/weather-radar) (map point, animated DWD rain radar, clock) and [Frigate camera](docs/examples/frigate-camera) (camera picker, overlays), plus small starter manifests in [docs/examples](docs/examples).
+- **Easy Install**: Nothing is pre-installed – in *Settings → Addons* choose *From URL* and paste e.g. `https://raw.githubusercontent.com/bejak1999/esphome-lvgl-studio/main/docs/examples/weather-radar/addon.json`, or load a file / paste JSON.
 - **Custom Addon Creator**: Create your own manifests with custom settings, live image previews, and generated YAML templates. See [docs/ADDONS.md](docs/ADDONS.md).
 
 ### 🌍 Fully Internationalized (English & German)
