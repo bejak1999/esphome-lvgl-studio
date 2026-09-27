@@ -109,7 +109,7 @@ function open(row: Row) {
 
       <!-- Platzierte Instanzen -->
       <div v-if="rows.length">
-        <div class="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+        <div class="mb-1 px-1 text-[10px] font-semibold text-gray-400">
           {{ t('addons_panel_in_dashboard') }}
         </div>
         <div

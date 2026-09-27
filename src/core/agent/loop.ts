@@ -246,7 +246,7 @@ Style-Eigenschaften (der Editor kennt & rendert diese – nutze sie gern für sc
     - Statisch (ins Firmware kompiliert): image: mit file (lokaler Pfad, URL oder mdi:<icon>), type, optional resize, transparency (alpha_channel|chroma_key).
     - Beispiel:
         online_image:
-          - url: "http://192.168.178.110:1984/api/frame.jpeg?src=Cam&w=480"
+          - url: "http://192.168.1.20:1984/api/frame.jpeg?src=Cam&w=480"
             id: cam_img
             format: JPEG
             type: RGB565

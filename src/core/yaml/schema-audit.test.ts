@@ -15,7 +15,6 @@ import type { Screen, WidgetType } from '../lvgl/types';
 
 const CANDIDATES = [
   'lvgl-schema.json',
-  'C:/Users/Benni/AppData/Local/Temp/lvgl.json',
 ];
 const path = CANDIDATES.find((p) => existsSync(p));
 

@@ -111,7 +111,7 @@ function insertWidget(tpl: WidgetTemplate) {
       <div class="min-h-0 flex-1 overflow-y-auto p-4">
         <!-- Dashboards -->
         <section class="mb-6">
-          <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ t('tpl_dashboards') }}</h3>
+          <h3 class="mb-2 text-xs font-semibold text-gray-200">{{ t('tpl_dashboards') }}</h3>
           <div class="mb-2 flex gap-2">
             <input
               v-model="newDashboardName"
@@ -138,11 +138,11 @@ function insertWidget(tpl: WidgetTemplate) {
 
         <!-- Widget-Vorlagen -->
         <section>
-          <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ t('tpl_widget_templates') }}</h3>
+          <h3 class="mb-2 text-xs font-semibold text-gray-200">{{ t('tpl_widget_templates') }}</h3>
 
           <!-- Theme der eingebauten Vorlagen -->
           <div class="mb-3 rounded-lg border border-white/10 bg-white/5 p-2">
-            <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('tpl_theme') }}</p>
+            <p class="mb-1.5 text-[11px] font-semibold text-gray-300">{{ t('tpl_theme') }}</p>
             <div class="flex flex-wrap gap-1.5" role="group" :aria-label="t('tpl_theme')">
               <button
                 v-for="th in TEMPLATE_THEMES"
@@ -186,7 +186,7 @@ function insertWidget(tpl: WidgetTemplate) {
             </button>
           </div>
           <div v-for="group in widgetGroups" :key="group.category" class="mb-4 last:mb-0">
-            <h4 class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600">{{ categoryName(group.category, lang) }}</h4>
+            <h4 class="mb-1.5 text-[10px] font-semibold text-gray-400">{{ categoryName(group.category, lang) }}</h4>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div v-for="tpl in group.items" :key="tpl.id" class="flex flex-col gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2">
                 <TemplatePreview :nodes="[nodeFor(tpl)]" :box="104" :bg="previewBg(tpl)" class="mx-auto" />

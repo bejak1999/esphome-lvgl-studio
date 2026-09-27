@@ -322,6 +322,28 @@ async function functional(browser, base, ok, errors, b) {
   ok('Verlauf: Stand sichern', (await v()) === v0 + 1);
   await kb.press('Escape');
 
+  // Speichern & Live-Prüfung – schreibende Befehle nur gegen den simulierten device-builder,
+  // nie gegen ein echtes Gerät (ESPHOME_URL).
+  if (fake) {
+    const n1 = fake.log.length;
+    await clickText(ed, 'header button', /^Save device$/);
+    await sleep(1000);
+    ok('Gerät speichern: schreibt ins ESPHome-Dashboard', fake.log.slice(n1).includes('devices/update_config'), fake.log.slice(n1).join(','));
+    ok('Gerät speichern: Ungespeichert-Hinweis verschwindet', !/(^|\s)unsaved(\s|$)/.test(await ed.evaluate(() => document.querySelector('header').innerText)));
+    await mode(ed, /^Split$/);
+    await clickText(ed, 'button', /^Live check$/);
+    await sleep(800);
+    ok('Live-Prüfung: gültig gemeldet', /✓ valid/.test(await text(ed)) && fake.log.includes('editor/validate_yaml'));
+    fake.state.validationErrors = [{ message: 'e2e: unknown key', range: { start_line: 2, start_col: 0, end_line: 2, end_col: 3 } }];
+    await clickText(ed, 'button', /^Live check$/);
+    await sleep(800);
+    ok('Live-Prüfung: Fehler mit Zeile angezeigt', /e2e: unknown key/.test(await text(ed)) && /Z3:/.test(await text(ed)));
+    fake.state.validationErrors = [];
+    await clickText(ed, 'button', /^Live check$/);
+    await sleep(600);
+    await mode(ed, /^Design$/);
+  }
+
   // Sidepanel ↔ Editor
   const sp = await openPage(browser, base, 'sidepanel.html', errors);
   await viewport(sp, 400, 850);
@@ -336,6 +358,29 @@ async function functional(browser, base, ok, errors, b) {
   await sleep(1200);
   await front(sp);
   ok('Sync: neues Widget erscheint in der Sidebar', (await sp.evaluate(() => document.body.innerText)).includes('Button'));
+
+  // Kompilieren & OTA – nur gegen den simulierten device-builder (nie am echten Gerät).
+  if (fake) {
+    const waitFor = async (re, ms = 15000) => {
+      const t0 = Date.now();
+      while (Date.now() - t0 < ms && !re.test(await text(sp))) await sleep(300);
+      return re.test(await text(sp));
+    };
+    fake.state.failNextJob = true;
+    await clickText(sp, 'button', /Compile$/);
+    ok('Kompilieren: Fehler zeigt Log-Ende', await waitFor(/Failed \(failed\)[\s\S]*ERROR compile failed/));
+    ok('Kompilieren: ohne Key kein Auto-Fix, Hinweis', /cannot automatically fix/.test(await text(sp)));
+    const n0 = fake.log.length;
+    await clickText(sp, 'button', /Compile$/);
+    const compiled = await waitFor(/Compilation successful/);
+    const cmds = fake.log.slice(n0);
+    ok('Kompilieren: speichert vorher, startet Job, folgt dem Log',
+      cmds.includes('devices/update_config') && cmds.includes('firmware/compile') && cmds.includes('firmware/follow_job'), cmds.join(','));
+    ok('Kompilieren: Erfolg wird gemeldet', compiled);
+    ok('Kompilieren: gespeichertes YAML enthält den neuen Button', /- button:/.test(fake.configs.get(dev) ?? ''));
+    await clickText(sp, 'button', /Flash via Wi-Fi$/);
+    ok('OTA: Flash-Job meldet Erfolg', await waitFor(/Flashed to device/) && fake.log.includes('firmware/install'));
+  }
 
   // KI ohne / mit ungültigem Key
   ok('KI: Hinweis ohne Key', /No OpenRouter key/i.test(await text(sp)));

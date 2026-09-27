@@ -15,6 +15,10 @@ export function startFakeEsphome(port = 36999, { serverVersion = 'fake-1.0' } = 
     fs.readdirSync(FIXTURES).filter((f) => f.endsWith('.yaml')).map((f) => [f, fs.readFileSync(path.join(FIXTURES, f), 'utf8')]),
   );
   const log = [];
+  const jobs = new Map();
+  let jobSeq = 0;
+  // Fehlerpfade für Tests: nächster Firmware-Job schlägt fehl / Live-Prüfung meldet Fehler.
+  const state = { failNextJob: false, validationErrors: [] };
 
   const server = http.createServer((req, res) => {
     // Wie der echte device-builder: jede Route liefert die SPA-Hülle (wichtig für den Relay-iframe).
@@ -56,7 +60,29 @@ export function startFakeEsphome(port = 36999, { serverVersion = 'fake-1.0' } = 
           configs.set(args.configuration, args.content);
           return reply(null);
         case 'editor/validate_yaml':
-          return reply({ yaml_errors: [], validation_errors: [] });
+          return reply({ yaml_errors: [], validation_errors: state.validationErrors });
+        // Firmware-Jobs: Job-id zurück, der Build-Log kommt über follow_job als Event-Stream.
+        case 'firmware/compile':
+        case 'firmware/install': {
+          if (!configs.has(args.configuration)) return fail('NOT_FOUND', args.configuration);
+          const id = `job-${++jobSeq}`;
+          jobs.set(id, { command, ...args, failed: state.failNextJob });
+          state.failNextJob = false;
+          return reply({ job_id: id });
+        }
+        case 'firmware/follow_job': {
+          const job = jobs.get(args.job_id);
+          if (!job) return fail('NOT_FOUND', args.job_id);
+          const event = (name, data) => ws.send(JSON.stringify({ message_id, event: name, data }));
+          const lines = job.command === 'firmware/install'
+            ? [`INFO Uploading to ${job.port}`, 'INFO OTA successful']
+            : ['INFO Reading configuration...', 'INFO Compiling app...', job.failed ? 'ERROR compile failed' : 'INFO Successfully compiled program.'];
+          lines.forEach((l, i) => setTimeout(() => event('output', l), 50 * (i + 1)));
+          setTimeout(() => event('result', job.failed
+            ? { status: 'failed', exit_code: 1, error: 'compile failed' }
+            : { status: 'completed', exit_code: 0, error: null }), 50 * (lines.length + 1));
+          return;
+        }
         default:
           return fail('UNKNOWN_COMMAND', command);
       }
@@ -69,6 +95,7 @@ export function startFakeEsphome(port = 36999, { serverVersion = 'fake-1.0' } = 
         url: `http://127.0.0.1:${port}`,
         log,
         configs,
+        state,
         // Hart beenden wie ein Neustart/Absturz: offene Sockets sofort trennen.
         close: () =>
           new Promise((r) => {

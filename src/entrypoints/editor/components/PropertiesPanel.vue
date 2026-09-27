@@ -491,7 +491,7 @@ const partGroups = computed(() => {
       <!-- Styling einzelner Teile (Regler-Füllung / Knopf) -->
       <div v-if="partGroups.length" class="mt-2 border-t border-white/10 pt-2">
         <button
-          class="flex w-full items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-300"
+          class="flex w-full items-center gap-1 text-[11px] font-semibold text-gray-300 hover:text-gray-300"
           @click="showParts = !showParts"
         >
           <span>{{ showParts ? '▾' : '▸' }}</span> {{ t('prop_parts_title') }}
@@ -522,7 +522,7 @@ const partGroups = computed(() => {
       <!-- Universelle Style-Optionen (Deckkraft, Schatten, Kontur, Padding …) -->
       <div class="mt-2 border-t border-white/10 pt-2">
         <button
-          class="flex w-full items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-300"
+          class="flex w-full items-center gap-1 text-[11px] font-semibold text-gray-300 hover:text-gray-300"
           @click="showAdvanced = !showAdvanced"
         >
           <span>{{ showAdvanced ? '▾' : '▸' }}</span> {{ t('prop_advanced_title') }}

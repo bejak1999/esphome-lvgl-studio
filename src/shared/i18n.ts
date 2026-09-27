@@ -320,6 +320,9 @@ export const translations = {
     // Ergänzungen (Audit: vollständige Übersetzung)
     map_no_hit: "No match",
     map_tiles_failed: "Map tiles could not be loaded – enter coordinates below",
+    map_load: "Load map",
+    map_consent_hint: "The map loads tiles of the shown area from CARTO (OpenStreetMap data); address searches go to OpenStreetMap Nominatim. You can also enter coordinates below.",
+    map_consent_denied: "Map not allowed – enter coordinates below.",
     map_span: "Span",
     // Ergänzungen (Audit: vollständige Übersetzung)
     mf_must_list: "{at}: must be a list",
@@ -739,6 +742,9 @@ export const translations = {
     // Ergänzungen (Audit: vollständige Übersetzung)
     map_no_hit: "Kein Treffer",
     map_tiles_failed: "Kacheln nicht ladbar – Koordinaten unten eintragen",
+    map_load: "Karte laden",
+    map_consent_hint: "Die Karte lädt Kacheln des gezeigten Gebiets von CARTO (OpenStreetMap-Daten); Adresssuchen gehen an OpenStreetMap Nominatim. Koordinaten kannst du auch unten eintragen.",
+    map_consent_denied: "Karte nicht erlaubt – Koordinaten unten eintragen.",
     map_span: "Breite",
     // Ergänzungen (Audit: vollständige Übersetzung)
     mf_must_list: "{at}: muss eine Liste sein",

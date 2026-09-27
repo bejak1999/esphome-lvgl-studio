@@ -36,7 +36,7 @@ async function liveValidate() {
   <div class="border-t border-white/10 bg-app">
     <div class="flex items-center justify-between px-3 py-1.5">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('val_title') }}</span>
+        <span class="text-[11px] font-semibold text-gray-300">{{ t('val_title') }}</span>
         <span v-if="schema.loaded" class="text-[10px] text-gray-500">Schema {{ schema.version }} · {{ schema.widgetTypes.length }} Widgets</span>
       </div>
       <div class="flex items-center gap-2">
@@ -70,7 +70,7 @@ async function liveValidate() {
     <!-- Live-Validierung gegen die echte ESPHome-Instanz -->
     <div class="flex items-center justify-between border-t border-white/5 px-3 py-1.5">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('val_live_title') }}</span>
+        <span class="text-[11px] font-semibold text-gray-300">{{ t('val_live_title') }}</span>
         <span v-if="esphome.validating" class="text-[10px] text-gray-400">{{ t('val_checking') }}</span>
         <span v-else-if="!esphome.connected" class="text-[10px] text-gray-600">{{ t('val_not_connected') }}</span>
         <span v-else-if="esphome.deviceIssues.length === 0" class="text-[10px] text-emerald-400">{{ t('val_valid') }}</span>

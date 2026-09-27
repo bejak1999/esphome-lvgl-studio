@@ -233,7 +233,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 
           <div v-if="showCode" class="flex min-w-0 flex-1 flex-col border-l border-white/10 bg-panel">
             <div class="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
-              <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500">ESPHome YAML</span>
+              <span class="text-[11px] font-semibold text-gray-300">ESPHome YAML</span>
               <span v-if="yamlError" class="text-[10px] text-red-400">{{ yamlError }}</span>
               <span v-else class="text-[10px] text-emerald-400">{{ t('editor_yaml_hint') }}</span>
             </div>

@@ -25,7 +25,7 @@ class MockWs implements WebSocketLike {
 
 describe('deriveWsUrl', () => {
   it('wandelt http-Basis in ws/ws-Pfad um', () => {
-    expect(deriveWsUrl('http://192.168.178.110:36052')).toBe('ws://192.168.178.110:36052/ws');
+    expect(deriveWsUrl('http://192.168.1.10:6052')).toBe('ws://192.168.1.10:6052/ws');
     expect(deriveWsUrl('https://esphome.local:6052/')).toBe('wss://esphome.local:6052/ws');
     expect(deriveWsUrl('http://host:6052/ws')).toBe('ws://host:6052/ws');
   });

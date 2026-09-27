@@ -16,6 +16,7 @@ import {
   wrapLon,
 } from '@/core/addons/geo';
 import { useI18n } from '@/shared/i18n';
+import { hasMapConsent, requestMapConsent } from '@/shared/dataConsent';
 const { t } = useI18n();
 
 export interface MapValue {
@@ -57,6 +58,24 @@ const search = ref('');
 const searching = ref(false);
 const searchError = ref('');
 const tilesBlocked = ref(false);
+
+/**
+ * Kacheln und Adresssuche übertragen den gezeigten Ort an CARTO/Nominatim. In Firefox erst nach
+ * Einwilligung (Kategorie „Standort“), bis dahin bleibt die Karte leer – Koordinaten gehen immer.
+ */
+const mapAllowed = ref(import.meta.env.BROWSER !== 'firefox');
+const consentDenied = ref(false);
+if (!mapAllowed.value) hasMapConsent().then((ok) => (mapAllowed.value = ok));
+
+/** Synchron aus Klick/Enter aufrufen, sonst lehnt Firefox die Anfrage ab. */
+function allowMap(): Promise<boolean> {
+  if (mapAllowed.value) return Promise.resolve(true);
+  return requestMapConsent().then((ok) => {
+    mapAllowed.value = ok;
+    consentDenied.value = !ok;
+    return ok;
+  });
+}
 
 let ro: ResizeObserver | undefined;
 onMounted(() => {
@@ -137,6 +156,7 @@ watch(
 
 const tiles = computed<Tile[]>(() => {
   const out: Tile[] = [];
+  if (!mapAllowed.value) return out;
   const n = Math.pow(2, zoom.value);
   const halfW = width.value / 2;
   const halfH = HEIGHT / 2;
@@ -240,6 +260,7 @@ function centerOnPoint() {
 async function doSearch() {
   const q = search.value.trim();
   if (!q) return;
+  if (!(await allowMap())) return;
   searching.value = true;
   searchError.value = '';
   try {
@@ -323,6 +344,21 @@ async function doSearch() {
 
       <div class="pointer-events-none absolute bottom-0 right-0 bg-black/50 px-1 text-[9px] text-gray-300">
         {{ attribution }}
+      </div>
+      <div
+        v-if="!mapAllowed"
+        class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-field/90 p-4 text-center"
+        @mousedown.stop
+        @wheel.stop
+      >
+        <p class="text-[10px] leading-snug text-gray-300">{{ consentDenied ? t('map_consent_denied') : t('map_consent_hint') }}</p>
+        <button
+          type="button"
+          class="rounded-lg bg-blue-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-blue-700"
+          @click="allowMap"
+        >
+          {{ t('map_load') }}
+        </button>
       </div>
       <div
         v-if="tilesBlocked"

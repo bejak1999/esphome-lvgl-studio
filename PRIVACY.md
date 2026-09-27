@@ -1,6 +1,6 @@
 # Privacy Policy for ESPHome LVGL Studio
 
-**Effective Date:** September 24, 2026
+**Effective Date:** September 27, 2026
 
 This Privacy Policy explains how ESPHome LVGL Studio ("the Extension") handles your data. We believe in strict privacy and transparency.
 
@@ -22,8 +22,12 @@ To provide its functionality, the Extension communicates directly with specific 
 - **OpenRouter API (or the AI service you configure):** Only if you use the AI assistant: your chat messages, attached images, error/build logs, your dashboard YAML and rendered preview images are sent directly to that service to generate code and fixes. Your own API key is used to authenticate these requests. Nothing is sent before you use the assistant; in Firefox you are asked for consent (data category “personal communications”) before the first transfer. If the assistant looks up your Home Assistant entities, their IDs and names are included. Your Home Assistant token and API keys stored in the settings are never sent to the AI service – but anything written in plain text inside your YAML (e.g. an `api: encryption: key:` instead of `!secret`) is part of the YAML and therefore sent along.
 - **Local ESPHome Devices:** The Extension connects directly to your local ESPHome devices (via WebSockets or REST APIs) to read logs, compile firmware, and update YAML configurations.
 - **Home Assistant:** If configured, the Extension connects directly to your Home Assistant instance to fetch entity IDs for autocompletion purposes.
+- **ESPHome schema and documentation (`schema.esphome.io`, `raw.githubusercontent.com`):** The Extension downloads the public ESPHome configuration schema to validate your YAML, and – when the AI assistant looks up a component – the matching public page of the ESPHome documentation. These are plain downloads of public files; none of your data is included in them.
+- **Map picker for addon locations (`nominatim.openstreetmap.org`, `basemaps.cartocdn.com`):** Only when you use the map in an addon's settings: map tiles for the area you are viewing are loaded from CARTO (OpenStreetMap data), or from a tile service the addon specifies, and an address you type into the map search is sent to OpenStreetMap Nominatim to find its coordinates. In Firefox you are asked for consent (data category “location”) before the map loads; coordinates can always be entered by hand instead. The chosen coordinates are stored locally and are only written into your YAML.
 
-We are not responsible for the privacy practices of OpenRouter, ESPHome, or Home Assistant. Please review their respective privacy policies to understand how they handle data transmitted to them.
+Like any web request, all of the requests above reveal your IP address to the service contacted.
+
+We are not responsible for the privacy practices of OpenRouter, OpenStreetMap, CARTO, GitHub, ESPHome, or Home Assistant. Please review their respective privacy policies to understand how they handle data transmitted to them.
 
 ## 3. Host Permissions
 At installation the Extension only requests access to `schema.esphome.io` (ESPHome configuration schema used for validation). Access to your own devices – the ESPHome dashboard, Home Assistant, camera images or addon data sources – is requested **at runtime, per host**, when you save their address in the settings or click “connect” / “Load entities”. Your browser shows which host is requested, and you can revoke the access at any time in the browser's extension settings. The Extension does not use host access to monitor your web browsing activity.

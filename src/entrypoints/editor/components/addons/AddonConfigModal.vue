@@ -167,7 +167,7 @@ function removeInstance() {
         <!-- Vorschau + Info -->
         <section class="min-w-0 space-y-2">
           <div v-if="manifest.preview">
-            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('addon_config_preview') }}</p>
+            <p class="mb-1 text-[11px] font-semibold text-gray-300">{{ t('addon_config_preview') }}</p>
             <div class="flex min-h-24 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-field p-1">
               <img
                 v-if="previewUrl && !previewError"
@@ -184,14 +184,14 @@ function removeInstance() {
           </div>
 
           <div v-if="summary.widgets.length">
-            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('addon_config_generated_widgets') }}</p>
+            <p class="mb-1 text-[11px] font-semibold text-gray-300">{{ t('addon_config_generated_widgets') }}</p>
             <ul class="space-y-0.5 text-[10px] text-gray-400">
               <li v-for="w in summary.widgets" :key="w" class="truncate">{{ w }}</li>
             </ul>
           </div>
 
           <div v-if="summary.yaml">
-            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{{ t('addon_config_additional_yaml') }}</p>
+            <p class="mb-1 text-[11px] font-semibold text-gray-300">{{ t('addon_config_additional_yaml') }}</p>
             <pre class="overflow-x-auto rounded-lg border border-white/10 bg-field p-2 text-[10px] text-gray-400">{{ summary.yaml }}</pre>
           </div>
         </section>
