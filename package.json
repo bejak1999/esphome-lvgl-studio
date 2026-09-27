@@ -1,6 +1,6 @@
 {
   "name": "esphome-lvgl-studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "GPL-3.0-only",
   "repository": "github:bejak1999/esphome-lvgl-studio",
   "description": "Browser-Extension: visueller LVGL-Dashboard-Editor für ESPHome mit KI-Agent (OpenRouter) und Auto-Debug-Loop",
