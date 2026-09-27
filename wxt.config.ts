@@ -19,6 +19,7 @@ export default defineConfig({
   zip: {
     excludeSources: [
       '.roundtrip/**',
+      'docs/images/**',
       '.env*',
       'Demo_Vorlagen/**',
       'Editor Demo/**',

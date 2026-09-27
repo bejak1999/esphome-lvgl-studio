@@ -21,22 +21,32 @@
 
 **ESPHome LVGL Studio** is a modern browser extension (Firefox & Chrome) designed to visually design, build, and deploy stunning **LVGL (Light and Versatile Graphics Library)** display dashboards for ESPHome devices.
 
-Equipped with an **Autonomous AI Agent** (powered by OpenRouter LLMs like Claude 3.5 Sonnet / Gemini 1.5 Pro / GPT-4o), ESPHome LVGL Studio allows you to generate complete dashboards from scratch, convert design sketches into code, compile firmware directly from your browser, and auto-fix compilation errors in a self-correction loop.
+Equipped with an optional **AI Agent** (any model available on OpenRouter, with your own API key), ESPHome LVGL Studio allows you to generate complete dashboards from scratch, convert design sketches into code, compile firmware directly from your browser, and auto-fix compilation errors in a self-correction loop.
+
+<p align="center">
+  <img src="docs/images/editor.png" alt="Editor with widget palette, canvas and properties panel" width="100%">
+</p>
+<p align="center">
+  <img src="docs/images/editor-and-sidebar.png" alt="Editor preview next to the browser sidebar with live preview and AI chat" width="100%">
+</p>
 
 ---
 
 ## 🌟 Key Features
 
 ### 🎨 Visual Drag-and-Drop LVGL Editor
-- **Rich Widget Library**: Buttons, Sliders, Arcs, Switches, Checkboxes, Dropdowns, Rollers, LEDs, Lines, Images, Meters, Spinners, Textareas, QR Codes, and Containers.
+- **Rich Widget Library**: Buttons, Sliders, Arcs, Switches, Checkboxes, Dropdowns, LEDs, Lines, Images, Meters, Spinners, Textareas, QR Codes, and Containers.
 - **Flexible Canvas & Alignment**: Precision positioning with pixel offsets or robust LVGL alignment anchors (`top_left`, `center`, `bottom_right`, etc.).
 - **Flexbox & Grid Layouts**: Native support for LVGL Flex and Grid container layouts with configurable gaps, flex-grow, and cell spans.
 - **Multiple Display Screens**: Manage multi-page display interfaces (`lvgl: pages:`) with custom screen transitions and page action triggers.
+- **39 Widget Templates**: Ready-made cards (climate, lighting, energy, security, scenes, Wi-Fi setup …) in four colour themes, labelled in your language.
+- **Three Interface Themes**: Nord Frost, Graphite & Amber and Forest & Teal – switch under *Settings → Appearance*.
 
 ### 🤖 Autonomous AI Coding Agent (OpenRouter)
 - **Natural Language Dashboard Builder**: Describe the interface you want or ask the AI to tweak colors, layouts, and typography.
 - **Vision AI Support**: Upload screenshots, wireframe sketches, or UI designs—the AI reads the layout and translates it into valid ESPHome LVGL YAML.
-- **Auto-Debug & Self-Correction Loop**: When compilation fails, the AI analyzes the build log, identifies the root cause, modifies the YAML, and re-validates automatically until clean.
+- **Auto-Debug & Self-Correction Loop**: When compilation fails, the AI analyzes the build log, identifies the root cause, modifies the YAML, and re-validates (up to a few attempts).
+- **You stay in control**: By default every AI change is shown as a diff to confirm; switch to *Auto* if you prefer.
 
 ### 🔒 Structure-Preserving CST YAML Engine
 - **Preserves Your Existing Code**: Edits made in the visual editor use a CST (Concrete Syntax Tree) parser that preserves your existing Home Assistant entity bindings, lambdas, custom components, Wi-Fi settings, and code comments.
@@ -49,7 +59,7 @@ Equipped with an **Autonomous AI Agent** (powered by OpenRouter LLMs like Claude
 
 ### 🧩 Declarative JSON Addon System
 - **Pure JSON Addons**: Extend the editor with custom widgets, dynamic cards, and complex integrations without writing code.
-- **Pre-packaged Examples**: Includes Frigate Camera stream cards and animated Weather Radar maps.
+- **Examples**: Small starter manifests in [docs/examples](docs/examples). Nothing is pre-installed – addons are installed from a URL, a file or pasted JSON.
 - **Custom Addon Creator**: Create your own manifests with custom settings, live image previews, and generated YAML templates. See [docs/ADDONS.md](docs/ADDONS.md).
 
 ### 🌍 Fully Internationalized (English & German)
@@ -96,7 +106,7 @@ Until the store listings are live, use the manual installation below.
 - Click the **⚙ Settings** icon in the sidebar or editor toolbar.
 - Enter your **ESPHome Dashboard URL** (e.g. `http://192.168.1.10:6052`).
 - *(Optional)* Enter your **Home Assistant Access Token** for live entity autocompletion.
-- Enter your **OpenRouter API Key** and choose your preferred AI Model (e.g., `anthropic/claude-3.5-sonnet` or `google/gemini-flash-1.5`).
+- *(Optional)* Enter your **OpenRouter API Key** and choose an AI model from the list.
 - Select your preferred **Language** (English or German).
 
 ### 2. Connect & Edit
@@ -109,25 +119,28 @@ Until the store listings are live, use the manual installation below.
 - **Image Import**: Drag and drop a UI mockup or sketch into the chat—the AI will construct the matching LVGL layout.
 
 ### 4. Compile & Deploy
-- Click **🔨 Compile** in the toolbar or sidebar.
+- Click **🔨 Compile** in the sidebar.
 - If any compilation errors occur, the **AI Agent** automatically intercepts the error log, fixes the code, and re-validates.
-- Click **📡 Flash via Wi-Fi (OTA)** or **🔌 USB Flash** to upload the final firmware directly to your display!
+- Click **📡 Flash via Wi-Fi** in the sidebar or **USB flash** in the editor's status bar (USB needs Chrome/Edge – Firefox has no Web Serial) to upload the firmware to your display.
 
 ---
 
 ## 🧩 Addon Ecosystem
 
-ESPHome LVGL Studio features a completely declarative, sandboxed **JSON Addon Engine**. Addons are written purely in JSON and require no executable JavaScript code, ensuring high safety and easy sharing.
+ESPHome LVGL Studio features a completely declarative **JSON Addon Engine**. Addons are written purely in JSON and contain no executable JavaScript. Addons that bring ESPHome `!lambda` code show a warning with the code before they are installed.
 
 ```json
 {
-  "id": "com.example.weather",
-  "name": "Weather Radar Card",
+  "id": "com.example.hello",
+  "name": "Hello Label",
   "version": "1.0.0",
-  "icon": "🌤️",
-  "description": "Displays live animated precipitation radar on your ESPHome display.",
+  "icon": "👋",
   "fields": [
-    { "key": "lat", "label": "Latitude", "type": "number", "default": 51.5 }
+    { "key": "text", "kind": "text", "label": "Text", "default": "Hello" },
+    { "key": "color", "kind": "color", "label": "Colour", "default": "#e5e7eb" }
+  ],
+  "widgets": [
+    { "key": "label", "type": "label", "props": { "text": "{{ config.text }}", "text_color": "{{ config.color }}" } }
   ]
 }
 ```
