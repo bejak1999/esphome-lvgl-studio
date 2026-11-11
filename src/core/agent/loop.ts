@@ -30,7 +30,7 @@ export type StepEvent =
   | { kind: 'error'; message: string };
 
 /** Warum der Lauf endete – damit die UI einen abrupten Stopp erklären kann. */
-export type DoneReason = 'finished' | 'aborted' | 'max_steps';
+export type DoneReason = 'finished' | 'aborted' | 'max_steps' | 'empty';
 
 export interface RunAgentOptions {
   llm: LlmLike;
@@ -61,6 +61,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<{ messages: ChatM
   const maxSteps = opts.maxSteps ?? 20;
   const messages: ChatMessage[] = [...opts.history];
   let renderCount = 0;
+  let emptyNudged = false;
 
   for (let step = 0; step < maxSteps; step++) {
     if (opts.shouldStop?.() || opts.signal?.aborted) {
@@ -90,13 +91,6 @@ export async function runAgent(opts: RunAgentOptions): Promise<{ messages: ChatM
       return { messages, final: errText };
     }
 
-    // Assistant-Nachricht (ggf. mit Tool-Calls) an die History anhängen.
-    messages.push({
-      role: 'assistant',
-      content: assistant.content,
-      tool_calls: assistant.tool_calls,
-    });
-
     if (assistant.usage) {
       onStep?.({
         kind: 'usage',
@@ -106,17 +100,47 @@ export async function runAgent(opts: RunAgentOptions): Promise<{ messages: ChatM
       });
     }
 
-    if (assistant.content) onStep?.({ kind: 'assistant', text: assistant.content });
+    const hasToolCalls = !!assistant.tool_calls && assistant.tool_calls.length > 0;
+    const hasText = typeof assistant.content === 'string' && assistant.content.trim() !== '';
 
-    if (!assistant.tool_calls || assistant.tool_calls.length === 0) {
-      const final = assistant.content ?? '';
+    // Reasoning-Modelle beenden manchmal mit leerem `content` (Text nur im Reasoning-Feld).
+    // Ohne Behandlung endet der Lauf dann stumm – einmal um eine Zusammenfassung bitten.
+    if (!hasToolCalls && !hasText) {
+      if (!emptyNudged) {
+        emptyNudged = true;
+        messages.push({
+          role: 'user',
+          content: isDe
+            ? 'Deine letzte Antwort war leer. Falls noch etwas zu tun ist, mach mit Tool-Aufrufen weiter; sonst fasse kurz zusammen, was du getan hast.'
+            : 'Your last reply was empty. If work remains, continue with tool calls; otherwise briefly summarize what you did.',
+        });
+        continue;
+      }
+      const text = isDe
+        ? 'Die KI hat ohne Antwort beendet (leere Rückgabe des Modells). Prüfe das YAML und schreib bei Bedarf „mach weiter“.'
+        : 'The AI finished without a reply (the model returned an empty message). Check the YAML and type "continue" if needed.';
+      onStep?.({ kind: 'done', text, reason: 'empty' });
+      return { messages, final: text };
+    }
+
+    // Assistant-Nachricht (ggf. mit Tool-Calls) an die History anhängen.
+    messages.push({
+      role: 'assistant',
+      content: assistant.content,
+      tool_calls: assistant.tool_calls,
+    });
+
+    if (hasText) onStep?.({ kind: 'assistant', text: assistant.content as string });
+
+    if (!hasToolCalls) {
+      const final = assistant.content as string;
       onStep?.({ kind: 'done', text: final, reason: 'finished' });
       return { messages, final };
     }
 
     // Tool-Calls ausführen und Ergebnisse zurückgeben.
     let pendingImage: string | null = null;
-    for (const call of assistant.tool_calls) {
+    for (const call of assistant.tool_calls ?? []) {
       const args = safeParse(call.function.arguments);
       onStep?.({ kind: 'tool_call', name: call.function.name, args });
       let result: string;

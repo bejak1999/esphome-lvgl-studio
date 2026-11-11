@@ -1,5 +1,6 @@
 import type { ToolDef } from './openrouter';
 import { ICONS, ICON_CATEGORIES } from '../lvgl/icons';
+import { PLATFORM_DOMAINS } from '../docs/client';
 
 /**
  * Werkzeuge des KI-Agenten. Die Definitionen (JSON-Schema) gehen an das Modell;
@@ -75,7 +76,7 @@ export const TOOL_DEFS: ToolDef[] = [
     function: {
       name: 'get_component_schema',
       description:
-        'Liefert die gültigen Konfigurations-Keys einer ESPHome-Komponente (aktuelle Version). Nutze dies, bevor du Config für eine Komponente schreibst.',
+        'Liefert die gültigen Konfigurations-Keys einer ESPHome-Komponente (aktuelle Version) inkl. erlaubter Enum-Werte. Funktioniert auch für Plattformen (z. B. "mipi_dsi", "gt911"). Nutze dies, bevor du Config für eine Komponente schreibst.',
       parameters: {
         type: 'object',
         properties: { component: { type: 'string', description: "z. B. 'lvgl', 'ili9xxx', 'wifi'." } },
@@ -88,10 +89,14 @@ export const TOOL_DEFS: ToolDef[] = [
     function: {
       name: 'get_component_doc',
       description:
-        'Liefert die aktuelle ESPHome-Dokumentation (Markdown) einer Komponente – inkl. Beispiele. Nutze dies für unbekannte Hardware/Displays.',
+        'Liefert die aktuelle ESPHome-Dokumentation (Markdown) einer Komponente – inkl. Beispiele. Nutze dies für unbekannte Hardware/Displays. Plattformen gehen auch als "<domäne>/<plattform>" (z. B. "display/mipi_dsi", "touchscreen/gt911"). Lange Dokus kommen in Abschnitten: weiterblättern mit offset, oder mit query gezielt nach einem Stichwort suchen (z. B. ein Panel-Modell).',
       parameters: {
         type: 'object',
-        properties: { component: { type: 'string' } },
+        properties: {
+          component: { type: 'string', description: "z. B. 'lvgl', 'wifi', 'display/mipi_dsi', 'esp32_hosted'." },
+          offset: { type: 'integer', description: 'Optional: Startzeichen für den nächsten Abschnitt einer langen Doku.' },
+          query: { type: 'string', description: 'Optional: liefert nur die Stellen rund um dieses Stichwort (z. B. "JC4880P443").' },
+        },
         required: ['component'],
       },
     },
@@ -141,21 +146,92 @@ function fmtIssues(issues: AgentIssue[]): string {
   return issues.map((i) => `- ${i.where ? i.where + ': ' : ''}${i.message}`).join('\n');
 }
 
-/** Extrahiert eine kompakte Key-Liste aus einem Komponenten-Schema (spart Tokens). */
+/** Maximal so viele Enum-Werte pro Key ausgeben (z. B. die Panel-Liste von mipi_dsi `model`). */
+const MAX_ENUM_VALUES = 80;
+
+/** Eine Key-Zeile: Name, required, Typ, Enum-Werte, verschachtelte Keys. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fmtConfigVar(name: string, def: any): string {
+  let line = `- ${name}${def?.key === 'Required' ? ' (required)' : ''}`;
+  if (def?.type) line += `: ${def.type}`;
+  if (def?.type === 'enum' && def.values && typeof def.values === 'object') {
+    const vals = Object.keys(def.values);
+    const shown = vals.slice(0, MAX_ENUM_VALUES).join(', ');
+    line += ` [${shown}${vals.length > MAX_ENUM_VALUES ? `, … (+${vals.length - MAX_ENUM_VALUES})` : ''}]`;
+  }
+  if (def?.default !== undefined && typeof def.default !== 'object') line += ` (default: ${def.default})`;
+  const sub = def?.schema?.config_vars;
+  if (sub && typeof sub === 'object') {
+    const keys = Object.entries(sub).map(([k, v]) => `${k}${(v as { key?: string })?.key === 'Required' ? ' (required)' : ''}`);
+    line += ` { ${keys.join(', ')} }`;
+  }
+  return line;
+}
+
+/**
+ * Extrahiert eine kompakte Key-Liste aus einem Komponenten-Schema (spart Tokens).
+ * Plattform-Komponenten stehen im Schema-Dump unter `<plattform>.<domäne>`
+ * (z. B. `mipi_dsi.display`, `gt911.touchscreen`) – die werden mit ausgewertet.
+ */
 export function summarizeComponentSchema(schema: unknown, component: string): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = schema as any;
-  const root = s?.[component] ?? s;
-  const cv = root?.schemas?.CONFIG_SCHEMA?.schema?.config_vars;
-  if (cv && typeof cv === 'object') {
-    const lines = Object.entries(cv).map(([k, v]) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const def = v as any;
-      return `- ${k}${def?.key === 'Required' ? ' (required)' : ''}${def?.type ? `: ${def.type}` : ''}`;
-    });
-    return `Config-Keys für '${component}':\n${lines.join('\n')}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const entries: [string, any][] = [];
+  if (s && typeof s === 'object') {
+    if (s[component]) entries.push([component, s[component]]);
+    for (const [k, v] of Object.entries(s)) if (k.startsWith(`${component}.`)) entries.push([k, v]);
   }
+  if (!entries.length) entries.push([component, s]);
+
+  const sections: string[] = [];
+  for (const [key, root] of entries) {
+    const cv = root?.schemas?.CONFIG_SCHEMA?.schema?.config_vars;
+    if (!cv || typeof cv !== 'object') continue;
+    const dot = key.indexOf('.');
+    const header =
+      dot > 0
+        ? `Config-Keys für '${key.slice(0, dot)}' als Plattform unter '${key.slice(dot + 1)}:' (YAML: ${key.slice(dot + 1)}: - platform: ${key.slice(0, dot)}):`
+        : `Config-Keys für '${key}':`;
+    sections.push(`${header}\n${Object.entries(cv).map(([k, v]) => fmtConfigVar(k, v)).join('\n')}`);
+  }
+  if (sections.length) return sections.join('\n\n');
   return JSON.stringify(schema).slice(0, 4000);
+}
+
+/**
+ * Bildet den Namen auf die Schema-Datei ab: `display.mipi_dsi`, `display/mipi_dsi` und
+ * `mipi_dsi.display` → `mipi_dsi` (schema.esphome.io legt Plattformen unter dem Plattformnamen ab).
+ */
+export function schemaFileName(component: string): string {
+  const parts = component.trim().toLowerCase().split(/[./]/).filter(Boolean);
+  if (parts.length < 2) return parts[0] ?? '';
+  const nonDomain = parts.filter((p) => !PLATFORM_DOMAINS.includes(p));
+  return nonDomain[0] ?? parts[parts.length - 1];
+}
+
+/** Zeichen pro Doku-Abschnitt, den die KI auf einmal bekommt. */
+export const DOC_CHUNK = 6000;
+/** Kontext um einen Suchtreffer in der Doku (Zeichen je Seite). */
+const DOC_QUERY_CONTEXT = 700;
+const DOC_QUERY_MAX_HITS = 8;
+
+/** Liefert die Abschnitte um alle Treffer von `query` (zusammengeführt, wenn sie sich überlappen). */
+export function docQuerySnippets(markdown: string, query: string): string | null {
+  const q = query.toLowerCase();
+  const hay = markdown.toLowerCase();
+  const ranges: [number, number][] = [];
+  for (let i = hay.indexOf(q); i !== -1 && ranges.length < 50; i = hay.indexOf(q, i + q.length)) {
+    const start = Math.max(0, i - DOC_QUERY_CONTEXT);
+    const end = Math.min(markdown.length, i + q.length + DOC_QUERY_CONTEXT);
+    const last = ranges[ranges.length - 1];
+    if (last && start <= last[1]) last[1] = end;
+    else ranges.push([start, end]);
+  }
+  if (!ranges.length) return null;
+  const shown = ranges.slice(0, DOC_QUERY_MAX_HITS);
+  const out = shown.map(([a, b]) => `[Zeichen ${a}–${b}]\n${markdown.slice(a, b)}`).join('\n\n---\n\n');
+  return ranges.length > shown.length ? `${out}\n\n(… ${ranges.length - shown.length} weitere Fundstellen)` : out;
 }
 
 /** Führt einen Tool-Aufruf aus und liefert das Ergebnis als String (Tool-Message-Content). */
@@ -188,9 +264,10 @@ export async function executeTool(
 
     case 'get_component_schema': {
       const comp = String(args.component ?? '');
+      const file = schemaFileName(comp);
       try {
-        const schema = await ctx.getComponentSchema(comp);
-        return summarizeComponentSchema(schema, comp);
+        const schema = await ctx.getComponentSchema(file);
+        return summarizeComponentSchema(schema, file);
       } catch (e) {
         return `Fehler beim Laden des Schemas für '${comp}': ${(e as Error).message}`;
       }
@@ -199,8 +276,25 @@ export async function executeTool(
     case 'get_component_doc': {
       const comp = String(args.component ?? '');
       const doc = await ctx.getComponentDoc(comp);
-      if (!doc) return `Keine Doku für '${comp}' gefunden.`;
-      return doc.markdown.slice(0, 6000);
+      if (!doc) {
+        return `Keine Doku für '${comp}' gefunden. Plattformen liegen unter ihrer Domäne – versuche z. B. 'display/mipi_dsi' oder 'touchscreen/gt911'.`;
+      }
+      const md = doc.markdown;
+      const total = md.length;
+      const query = typeof args.query === 'string' ? args.query.trim() : '';
+      if (query) {
+        const hits = docQuerySnippets(md, query);
+        return hits
+          ? `Quelle: ${doc.path} (${total} Zeichen) – Fundstellen für „${query}":\n\n${hits}`
+          : `Quelle: ${doc.path} (${total} Zeichen) – „${query}" kommt in dieser Doku nicht vor.`;
+      }
+      const offset = Math.max(0, Math.min(total, Math.floor(Number(args.offset) || 0)));
+      const end = Math.min(total, offset + DOC_CHUNK);
+      let out = `Quelle: ${doc.path} (Zeichen ${offset}–${end} von ${total})\n\n${md.slice(offset, end)}`;
+      if (end < total) {
+        out += `\n\n[… gekürzt. Weiter mit get_component_doc(component: "${comp}", offset: ${end}) oder gezielt mit query: "<Stichwort>".]`;
+      }
+      return out;
     }
 
     case 'list_ha_entities': {

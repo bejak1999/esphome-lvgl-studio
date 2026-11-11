@@ -515,12 +515,23 @@ const changedThisRun = ref(false);
 function onStep(ev: StepEvent) {
   if (ev.kind === 'assistant' && ev.text) feed.value.push({ role: 'assistant', text: ev.text });
   else if (ev.kind === 'tool_call') {
-    feed.value.push({ role: 'step', text: `🔧 ${ev.name}` });
+    // Wichtigstes Argument mit anzeigen, damit man sieht, WAS nachgeschlagen wird.
+    const a = ev.args;
+    const detail = [a.component, a.category, a.query ? `„${a.query}"` : undefined, a.offset ? `ab ${a.offset}` : undefined]
+      .filter((v) => v !== undefined && v !== '')
+      .map(String)
+      .join(' · ');
+    feed.value.push({ role: 'step', text: `🔧 ${ev.name}${detail ? ` (${detail})` : ''}` });
     if (ev.name === 'set_yaml') changedThisRun.value = true;
+  } else if (ev.kind === 'tool_result') {
+    // Fehlgeschlagene Abfragen sichtbar machen (sonst sieht man nur eine lange Liste von 🔧).
+    if (/^(Keine Doku|Fehler|Error|Unbekanntes Tool)/.test(ev.result)) {
+      feed.value.push({ role: 'step', text: `⚠️ ${ev.result.split('\n')[0].slice(0, 160)}` });
+    }
   } else if (ev.kind === 'usage') {
     promptTokens.value = ev.promptTokens;
     completionTokens.value = ev.completionTokens;
-  } else if (ev.kind === 'done' && ev.reason === 'max_steps') {
+  } else if (ev.kind === 'done' && (ev.reason === 'max_steps' || ev.reason === 'empty')) {
     // Sonst bricht die KI scheinbar grundlos mitten in der Arbeit ab.
     feed.value.push({ role: 'error', text: `⏹ ${ev.text}` });
   } else if (ev.kind === 'error') feed.value.push({ role: 'error', text: ev.message });

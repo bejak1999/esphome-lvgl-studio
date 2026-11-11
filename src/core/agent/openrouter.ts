@@ -95,10 +95,18 @@ export function supportsImageInput(m: ModelInfo): boolean {
   return typeof mod === 'string' && mod.includes('image');
 }
 
+/**
+ * Zeitlimit je Chat-Anfrage. Großzügig, weil Reasoning-Modelle mit vollem Kontext
+ * (viele Doku-Abfragen) durchaus mehrere Minuten pro Schritt brauchen.
+ */
+export const DEFAULT_CHAT_TIMEOUT_MS = 300_000;
+
 export interface OpenRouterConfig {
   apiKey: string;
   baseUrl?: string;
   fetchImpl?: FetchLike;
+  /** Zeitlimit je Chat-Anfrage in ms (Default: {@link DEFAULT_CHAT_TIMEOUT_MS}). */
+  timeoutMs?: number;
 }
 
 export class OpenRouterClient {
@@ -128,28 +136,54 @@ export class OpenRouterClient {
       body.plugins = [{ id: 'file-parser', pdf: { engine: 'pdf-text' } }];
     }
 
-    const res = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://esphome-lvgl-studio.local',
-        'X-Title': 'ESPHome LVGL Studio',
-      },
-      body: JSON.stringify(body),
-      signal: opts.signal,
-    });
+    // Eigenes Zeitlimit zusätzlich zum Stop-Signal des Nutzers: Ohne Timeout bliebe
+    // „Agent arbeitet…" bei einer hängenden Anfrage für immer stehen.
+    const timeoutMs = this.config.timeoutMs ?? DEFAULT_CHAT_TIMEOUT_MS;
+    const ctrl = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      ctrl.abort();
+    }, timeoutMs);
+    const forwardAbort = () => ctrl.abort();
+    if (opts.signal?.aborted) ctrl.abort();
+    else opts.signal?.addEventListener('abort', forwardAbort, { once: true });
 
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`OpenRouter HTTP ${res.status}: ${body.slice(0, 300)}`);
-    }
-
-    const data = (await res.json()) as {
+    type ChatResponse = {
       choices?: { message?: AssistantMessage }[];
       usage?: Partial<Usage>;
       error?: { message?: string };
     };
+    let data: ChatResponse;
+    try {
+      const res = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://esphome-lvgl-studio.local',
+          'X-Title': 'ESPHome LVGL Studio',
+        },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`OpenRouter HTTP ${res.status}: ${body.slice(0, 300)}`);
+      }
+
+      data = (await res.json()) as ChatResponse;
+    } catch (e) {
+      // Nur ein echtes Timeout umdeuten – ein Stop des Nutzers bleibt ein AbortError.
+      if (timedOut && !opts.signal?.aborted) {
+        throw new Error(`OpenRouter: keine Antwort nach ${Math.round(timeoutMs / 1000)} s (Zeitüberschreitung). Schreib „mach weiter“, um es erneut zu versuchen.`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener('abort', forwardAbort);
+    }
     if (data.error) throw new Error(`OpenRouter: ${data.error.message}`);
     const message = data.choices?.[0]?.message;
     if (!message) throw new Error('OpenRouter: leere Antwort');

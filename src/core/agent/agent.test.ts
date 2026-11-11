@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { runAgent, type LlmLike, type StepEvent } from './loop';
-import { executeTool, summarizeComponentSchema, type AgentContext } from './tools';
+import { executeTool, schemaFileName, summarizeComponentSchema, type AgentContext } from './tools';
 import { TOOL_DEFS } from './tools';
 import { OpenRouterClient, supportsImageInput, userMessageWithAttachments, type ContentPart } from './openrouter';
 import type { AssistantMessage } from './openrouter';
@@ -178,11 +178,116 @@ describe('Auto-Debug-Loop', () => {
   });
 });
 
+describe('Leere Endantwort (Reasoning-Modelle)', () => {
+  it('fragt einmal nach und liefert dann die Zusammenfassung', async () => {
+    const script: AssistantMessage[] = [
+      { role: 'assistant', content: '', tool_calls: undefined },
+      { role: 'assistant', content: 'WLAN und API ergänzt.', tool_calls: undefined },
+    ];
+    const steps: StepEvent[] = [];
+    const { final, messages } = await runAgent({
+      llm: new ScriptedLlm(script),
+      model: 'test',
+      system: 'sys',
+      history: [{ role: 'user', content: 'los' }],
+      tools: TOOL_DEFS,
+      ctx: makeCtx(),
+      lang: 'de',
+      onStep: (e) => steps.push(e),
+    });
+    expect(final).toBe('WLAN und API ergänzt.');
+    // Die leere Assistant-Nachricht landet NICHT im Verlauf (manche Provider lehnen sie ab).
+    expect(messages.map((m) => m.role)).toEqual(['user', 'user', 'assistant']);
+    expect((steps.find((s) => s.kind === 'done') as Extract<StepEvent, { kind: 'done' }>).reason).toBe('finished');
+  });
+
+  it('endet nicht stumm, wenn das Modell zweimal leer antwortet', async () => {
+    const empty: LlmLike = { async chat() { return { role: 'assistant', content: null }; } };
+    const steps: StepEvent[] = [];
+    const { final } = await runAgent({
+      llm: empty,
+      model: 'test',
+      system: 'sys',
+      history: [{ role: 'user', content: 'los' }],
+      tools: TOOL_DEFS,
+      ctx: makeCtx(),
+      lang: 'de',
+      onStep: (e) => steps.push(e),
+    });
+    const done = steps.find((s) => s.kind === 'done') as Extract<StepEvent, { kind: 'done' }>;
+    expect(done.reason).toBe('empty');
+    expect(final).toContain('ohne Antwort');
+  });
+});
+
 describe('Tools', () => {
   it('get_component_doc liefert Markdown', async () => {
     const ctx = makeCtx();
     const out = await executeTool('get_component_doc', { component: 'ili9xxx' }, ctx);
     expect(out).toContain('# ili9xxx');
+  });
+
+  it('get_component_doc blättert lange Dokus per offset und sucht per query', async () => {
+    const long = 'A'.repeat(7000) + ' model: JC4880P443 ' + 'B'.repeat(7000);
+    const ctx = { ...makeCtx(), getComponentDoc: async () => ({ path: 'components/display/mipi_dsi.mdx', markdown: long }) };
+    const first = await executeTool('get_component_doc', { component: 'display/mipi_dsi' }, ctx);
+    expect(first).toContain('Zeichen 0–6000 von');
+    expect(first).toContain('offset: 6000');
+    expect(first).not.toContain('JC4880P443');
+
+    const second = await executeTool('get_component_doc', { component: 'display/mipi_dsi', offset: 6000 }, ctx);
+    expect(second).toContain('JC4880P443');
+
+    const hit = await executeTool('get_component_doc', { component: 'display/mipi_dsi', query: 'jc4880p443' }, ctx);
+    expect(hit).toContain('JC4880P443');
+    expect(hit.length).toBeLessThan(2000);
+
+    const miss = await executeTool('get_component_doc', { component: 'display/mipi_dsi', query: 'XYZ123' }, ctx);
+    expect(miss).toContain('nicht vor');
+  });
+
+  it('get_component_doc gibt bei fehlender Doku einen Hinweis auf Plattform-Pfade', async () => {
+    const ctx = { ...makeCtx(), getComponentDoc: async () => null };
+    const out = await executeTool('get_component_doc', { component: 'foo' }, ctx);
+    expect(out).toContain('display/mipi_dsi');
+  });
+
+  it('get_component_schema lädt Plattform-Schemas unter dem Plattformnamen', async () => {
+    let requested = '';
+    const ctx = {
+      ...makeCtx(),
+      async getComponentSchema(c: string) {
+        requested = c;
+        return {
+          'mipi_dsi.display': {
+            schemas: {
+              CONFIG_SCHEMA: {
+                schema: {
+                  config_vars: {
+                    model: { key: 'Required', type: 'enum', values: { CUSTOM: null, JC4880P443: null } },
+                    dimensions: { key: 'Optional', schema: { config_vars: { width: { key: 'Required' }, height: { key: 'Required' } } } },
+                    color_depth: { key: 'Optional', type: 'enum', default: '16', values: { '16': null, '24': null } },
+                  },
+                },
+              },
+            },
+          },
+        };
+      },
+    };
+    const out = await executeTool('get_component_schema', { component: 'display.mipi_dsi' }, ctx);
+    expect(requested).toBe('mipi_dsi');
+    expect(out).toContain("Plattform unter 'display:'");
+    expect(out).toContain('model (required): enum [CUSTOM, JC4880P443]');
+    expect(out).toContain('dimensions { width (required), height (required) }');
+    expect(out).toContain('(default: 16)');
+  });
+
+  it('schemaFileName normalisiert Plattform-Schreibweisen', () => {
+    expect(schemaFileName('mipi_dsi')).toBe('mipi_dsi');
+    expect(schemaFileName('display.mipi_dsi')).toBe('mipi_dsi');
+    expect(schemaFileName('display/mipi_dsi')).toBe('mipi_dsi');
+    expect(schemaFileName('gt911.touchscreen')).toBe('gt911');
   });
 
   it('summarizeComponentSchema listet Config-Keys', () => {
@@ -224,6 +329,29 @@ describe('OpenRouterClient', () => {
     expect(JSON.parse(captured!.body).model).toBe('anthropic/claude-3.7-sonnet');
     // Ohne PDF kein file-parser-Plugin.
     expect(JSON.parse(captured!.body).plugins).toBeUndefined();
+  });
+
+  /** Fetch, der nie antwortet, aber auf das Abort-Signal reagiert (wie das echte fetch). */
+  const hangingFetch = async (_url: string, init: { signal?: AbortSignal }) =>
+    new Promise<never>((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => {
+        const e = new Error('aborted');
+        e.name = 'AbortError';
+        reject(e);
+      });
+    });
+
+  it('bricht eine hängende Anfrage nach dem Zeitlimit mit klarer Meldung ab', async () => {
+    const client = new OpenRouterClient({ apiKey: 'k', fetchImpl: hangingFetch, timeoutMs: 20 });
+    await expect(client.chat({ model: 'm', messages: [{ role: 'user', content: 'hi' }] })).rejects.toThrow(/Zeitüberschreitung/);
+  });
+
+  it('lässt einen Stop des Nutzers ein AbortError bleiben', async () => {
+    const client = new OpenRouterClient({ apiKey: 'k', fetchImpl: hangingFetch, timeoutMs: 10_000 });
+    const ctrl = new AbortController();
+    const p = client.chat({ model: 'm', messages: [{ role: 'user', content: 'hi' }], signal: ctrl.signal });
+    ctrl.abort();
+    await expect(p).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   it('aktiviert das file-parser-Plugin nur bei einem PDF-Anhang', async () => {
