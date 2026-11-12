@@ -31,7 +31,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx puppeteer browsers install firefox@stable
+      # Ohne Versions-Tag installiert Puppeteer genau die Firefox-Version, die es selbst erwartet.
+      # `firefox@stable` lief auseinander, sobald Mozilla ein neues Stable veröffentlicht hatte
+      # (installiert 160, gesucht 156.0.1 → „Could not find Firefox“).
+      - run: npx puppeteer browsers install firefox
       # 1) Produktions-Build: Verhalten OHNE Host-Berechtigung (Hinweise, kein Verbindungsversuch)
       - run: npm run build
       - run: npm run build:chrome
