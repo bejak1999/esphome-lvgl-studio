@@ -58,9 +58,9 @@ jobs:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID || 'esphome-lvgl-studio@benni.local' }}
           FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
           FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
-          # 'unlisted' = nur signieren (wie bisher auf AMO), 'listed' = öffentlich im Store.
+          # 'listed' = öffentlich im Store (AMO-Listing seit 0.1.1), 'unlisted' = nur signieren.
           # Umstellen per Repo-Variable FIREFOX_CHANNEL (Settings → Secrets and variables → Variables).
-          FIREFOX_CHANNEL: ${{ vars.FIREFOX_CHANNEL || 'unlisted' }}
+          FIREFOX_CHANNEL: ${{ vars.FIREFOX_CHANNEL || 'listed' }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: |
           ARGS=""
